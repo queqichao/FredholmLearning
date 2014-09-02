@@ -7,7 +7,7 @@ Loosely inspired by http://abel.ee.ucla.edu/cvxopt/_downloads/mnist.py
 which is GPL licensed.
 """
 
-def read(dataset = "training", path = "."):
+def read(digits, dataset = "training", path = "."):
     """
     Python function for importing the MNIST data set.  It returns an iterator
     of 2-tuples with the first element being the label and the second element
@@ -21,7 +21,7 @@ def read(dataset = "training", path = "."):
         fname_img = os.path.join(path, 't10k-images-idx3-ubyte')
         fname_lbl = os.path.join(path, 't10k-labels-idx1-ubyte')
     else:
-        raise ValueError, "dataset must be 'testing' or 'training'"
+        raise ValueError("dataset must be 'testing' or 'training'")
 
     # Load everything in some numpy arrays
     with open(fname_lbl, 'rb') as flbl:
@@ -32,11 +32,9 @@ def read(dataset = "training", path = "."):
         magic, num, rows, cols = struct.unpack(">IIII", fimg.read(16))
         img = np.fromfile(fimg, dtype=np.uint8).reshape(len(lbl), rows, cols)
 
-    get_img = lambda idx: (lbl[idx], img[idx])
+    indices = [k for k in range(img.shape[0]) if lbl[k] in digits]
 
-    # Create an iterator which returns each image in turn
-    for i in xrange(len(lbl)):
-        yield get_img(i)
+    return img[indices], lbl[indices]
 
 def show(image):
     """
