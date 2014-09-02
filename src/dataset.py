@@ -1,4 +1,5 @@
 import numpy as np
+import mnist
 from matplotlib import pyplot as plt
 
 class SemiSupervisedDataSet:
@@ -122,3 +123,28 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
       raise NameError('Not existing data_set_name: '+data_set_name+'.')
     return data,labels
 
+class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
+  def __init__(self, dataset):
+    if dataset["name"] == 'mnist_train':
+      self._load_mnist_train(dataset)
+
+  def _load_mnist_train(self, dataset):
+    data,labels = mnist.read(dataset["digits"], path=dataset["path"])
+    data = np.array([x.flatten() for x in data])
+    num_data = data.shape[0]
+    if dataset["permutation"]:
+      if "seed" in dataset:
+        np.random.seed(dataset["seed"])
+      p = np.random.permutation(num_data)
+      data = data[p]
+      labels = labels[p]
+    data = data*1.0/255
+    labels = labels*1.0
+    self._num_training = dataset["num_training"] 
+    self._num_unlabeled = dataset["num_unlabeled"]
+    self._training_data = data[0:self._num_training]
+    self._training_labels = labels[0:self._num_training]
+    self._unlabeled_data = data[self._num_training:self._num_training+self._num_unlabeled]
+    self._testing_data = data[self._num_training:num_data]
+    self._testing_labels = labels[self._num_training:num_data]
+   

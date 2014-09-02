@@ -1,12 +1,15 @@
 {
-  "num_training": 200,
-  "num_unlabeled": 2000,
-  "num_testing": 1000,
-  "dim": 100, 
-  "noise_scale": 0.1,
-  "data_set_name": "circle-quad",
   "cross_validation": true,
   "n_folds": 5,
+  "dataset": {
+    "name": "circle-quad",
+    "type": "synthesized",
+    "num_training": 200,
+    "num_unlabeled": 2000,
+    "num_testing": 1000,
+    "dim": 100, 
+    "noise_scale": 0.1
+  },
   "classifiers": [
     {
       "name": "SVC",

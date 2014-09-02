@@ -1,12 +1,15 @@
 {
-  "num_training": 200,
-  "num_unlabeled": 2000,
-  "num_testing": 1000,
-  "dim": 100, 
-  "noise_scale": 0.1,
-  "data_set_name": "twoline-cluster",
-  "cross_validation": true,
+  "cross_validation": false,
   "n_folds": 5,
+  "dataset": {
+    "name": "twoline-cluster",
+    "type": "synthesized",
+    "num_training": 200,
+    "num_unlabeled": 2000,
+    "num_testing": 1000,
+    "dim": 100, 
+    "noise_scale": 0.3
+  },
   "classifiers": [
     {
       "name": "SVC",

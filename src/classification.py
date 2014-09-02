@@ -1,7 +1,5 @@
 import numpy as np
-from sklearn.metrics.pairwise import pairwise_kernels
-from sklearn.cross_validation import KFold
-from sklearn.base import clone
+from dataset import SynthesizedSemiSupervisedDataSet, ExistingSemiSupervisedDataSet
 import argparse
 import util
 import json
@@ -21,12 +19,7 @@ plot_data = args.plot_data
 repeat = args.repeat
 n_jobs = args.n_jobs
 
-num_training = config["num_training"]
-num_unlabled = config["num_unlabeled"]
-num_testing = config["num_testing"]
-dim = config["dim"]
-noise_scale = config["noise_scale"]
-data_set_name = config["data_set_name"]
+dataset_config = config["dataset"]
 classifiers = config["classifiers"]
 cross_validation = config["cross_validation"]
 n_folds = config["n_folds"]
@@ -34,12 +27,15 @@ n_folds = config["n_folds"]
 results = [[] for x in range(len(classifiers))]
 
 for i in range(repeat):
-  training_data, training_labels = util.generate_data(num_training, dim, noise_scale, data_set_name)
-  unlabeled_data,_ = util.generate_data(num_unlabled, dim, noise_scale, data_set_name)
-  testing_data, testing_labels = util.generate_data(num_testing, dim, noise_scale, data_set_name) 
+  if dataset_config["type"] == 'synthesized':
+    dataset = SynthesizedSemiSupervisedDataSet(dataset_config)
+  elif dataset_config["type"] == 'existing':
+    dataset = ExistingSemiSupervisedDataSet(dataset_config) 
+  else:
+    raise NameError("Data set type: "+dataset_config["type"]+" does not exist.")
 
   if plot_data:
-    util.plot_data(np.concatenate((training_data, testing_data), axis=0), np.concatenate((training_labels, testing_labels),axis=0))
+    dataset.visualize([0, 1])
 
   for j, classifier in enumerate(classifiers):
     classifier["n_jobs"] = n_jobs
@@ -48,14 +44,14 @@ for i in range(repeat):
     else:
       c = util.get_classifier(classifier)
     if classifier["semi-supervised"]:
-      c.fit(np.concatenate((training_data, unlabeled_data), axis=0), np.concatenate((training_labels, -np.ones((num_unlabled,))), axis=0))
+      c.fit(dataset.semi_supervised_data(), dataset.semi_supervised_labels())
     else:
-      c.fit(training_data, training_labels)
+      c.fit(dataset.training_data(), dataset.training_labels())
     if cross_validation:
       print(classifier["name"]+": "+str(c.best_params_))
       classifier["params"] = c.best_params_
-    testing_pred_labels = c.predict(testing_data)
-    results[j].append(len([0 for i in range(num_testing) if testing_labels[i]==testing_pred_labels[i]])*1.0/num_testing)
+    testing_pred_labels = c.predict(dataset.testing_data())
+    results[j].append(len([0 for i in range(dataset.num_testing()) if dataset.testing_labels()[i]==testing_pred_labels[i]])*1.0/dataset.num_testing())
 
 if cv_config_file != "":
   open(cv_config_file, 'w').write(json.dumps(config))
