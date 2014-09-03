@@ -140,7 +140,9 @@ class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
       labels = labels[p]
     data = data*1.0/255
     labels = labels*1.0
-    self._num_training = dataset["num_training"] 
+    if dataset["noise_scale"] > 0:
+      data = ExistingSemiSupervisedDataSet._add_noise(data, dataset["noise_scale"])
+    self._num_training = dataset["num_training"]
     self._num_unlabeled = dataset["num_unlabeled"]
     self._training_data = data[0:self._num_training]
     self._training_labels = labels[0:self._num_training]
@@ -148,3 +150,7 @@ class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
     self._testing_data = data[self._num_training:num_data]
     self._testing_labels = labels[self._num_training:num_data]
    
+  def _add_noise(cls, X, noise_scale):
+    num_data = X.shape[0]
+    dim = X.shape[1]
+    return X+np.random.normal(0, noise_scale, (num_data, dim,))
