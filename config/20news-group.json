@@ -1,0 +1,91 @@
+{
+  "cross_validation": false,
+  "n_folds": 5,
+  "dataset": {
+    "name": "20news_group",
+    "type": "existing",
+    "dataset": "all",
+    "path": "../data/20news_group/",
+    "num_training": 400,
+    "num_unlabeled": 10000,
+    "noise_scale": 0.0,
+    "labels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+    "permutation": true
+  },
+  "classifiers": [
+    {
+      "name": "SVC",
+      "semi-supervised": false,
+      "params": {
+        "C": 1000,
+        "kernel": "rbf",
+        "gamma": 0.1
+      },
+      "params_grid": {
+        "C": [1e10, 1e8, 1e6, 1e4, 1e2, 1],
+        "kernel": ["rbf"],
+        "gamma": [3, 1, 0.3, 0.1, 0.03]
+      }
+    },
+    {
+      "name": "l2-SVC",
+      "semi-supervised": false,
+      "params": {
+        "kernel": "rbf",
+        "gamma": 0.1,
+        "nu": 0.03
+      },
+      "params_grid": {
+        "kernel": ["rbf"],
+        "gamma": [30, 10, 3, 1],
+        "nu": [1e10, 1e8, 1e6, 1e4, 1e2]
+      }
+    },
+    {
+      "name": "fredholm",
+      "semi-supervised": true,
+      "params": {
+        "in_kernel": "rbf",
+        "out_kernel": "rbf",
+        "gamma": 0.1,
+        "nu": 0.03
+      },
+      "params_grid": {
+        "in_kernel": ["rbf"],
+        "out_kernel": ["rbf"],
+        "gamma": [30, 10, 3, 1],
+        "nu": [1e10, 1e8, 1e6, 1e4, 1e2]
+      }
+    },
+    {
+      "name": "TSVM",
+      "semi-supervised": true,
+      "params": {
+        "kernel": "rbf",
+        "rbf_gamma": 0.1,
+        "C": 1000
+      },
+      "params_grid": {
+        "kernel": ["rbf"],
+        "rbf_gamma": [3, 1, 0.3, 0.1],
+        "C": [1e10, 1e8, 1e6, 1e4, 1e2]
+      }
+    },
+    {
+      "name": "Lap-RLSC",
+      "semi-supervised": true,
+      "params": {
+        "rbf_gamma": 0.1,
+        "normalize_laplacian": false,
+        "nu1": 1000,
+        "nu2": 1000
+      },
+      "params_grid": {
+        "rbf_gamma": [30, 10, 3, 1],
+        "normalize_laplacian": [false],
+        "nu1": [1e10, 1e8, 1e6, 1e4, 1e2],
+        "nu2": [1000]
+      }
+    }
+  ]
+}

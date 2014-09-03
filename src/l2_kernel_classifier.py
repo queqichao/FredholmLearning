@@ -43,7 +43,8 @@ class L2KernelClassifier(BaseL2KernelClassifier):
     self.degree = degree
     self.gamma = gamma
     self.coef0 = coef0
-
+  
+  @profile
   def fit(self, X, y):
     self.X_ = X
     kernel_matrix = pairwise_kernels(X, metric=self.kernel, filter_params=True, gamma=self.gamma, degree=self.degree, coef0=self.coef0)
@@ -60,6 +61,7 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
     self.out_kernel = out_kernel
     self.gamma = gamma;
 
+  @profile
   def fit(self, X, y):
     self.X_ = X
     labeled = y != -1

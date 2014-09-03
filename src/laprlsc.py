@@ -15,6 +15,7 @@ class LapRLSC(BaseEstimator, ClassifierMixin):
       self.nu2 = nu2
     self._label_binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
 
+  @profile
   def fit(self, X, y):
     num_data = X.shape[0]
     labeled = y!=-1

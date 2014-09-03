@@ -3,6 +3,8 @@ from dataset import SynthesizedSemiSupervisedDataSet, ExistingSemiSupervisedData
 import argparse
 import util
 import json
+import getpass
+import socket
 
 parser = argparse.ArgumentParser()
 parser.add_argument('config_file', help='Config file', type=str)
@@ -56,5 +58,10 @@ for i in range(repeat):
 if cv_config_file != "":
   open(cv_config_file, 'w').write(json.dumps(config))
 
+result_str = ''
 for j, result in enumerate(results):
-  print(classifiers[j]["name"]+': '+', '.join([str(x) for x in result])+"\nmean: "+str(np.mean(result))+"; std:"+str(np.std(result)))
+  result_str += classifiers[j]["name"]+': '+', '.join([str(x) for x in result])+"\nmean: "+str(np.mean(result))+"; std:"+str(np.std(result))+'\n'
+
+result_str += "\n\nThe result json is:\n"
+result_str += json.dumps(config)+'\n'
+util.send_results(result_str, getpass.getuser()+'@'+socket.gethostname()+'.cse.ohio-state.edu', 'que@cse.ohio-state.edu')

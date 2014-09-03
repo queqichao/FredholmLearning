@@ -41,6 +41,7 @@ class SVMLight(BaseEstimator, ClassifierMixin):
 
     return self
 
+  @profile
   def fit(self, X, y):
     num_data = X.shape[0]
     unlabeled = y == -1
@@ -76,4 +77,4 @@ class SVMLight(BaseEstimator, ClassifierMixin):
     return [(l, self.__vector2words(x)) for (x,l) in zip(X, y)]
 
   def __vector2words(self, v):
-    return [(i+1, x) for i,x in enumerate(v)]
+    return [(i+1, x) for i,x in enumerate(v) if x!=0.0]
