@@ -7,6 +7,8 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from abc import ABCMeta
 
 class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator), ClassifierMixin):
+
+  @profile
   def fit(self, kernel_matrix, y):
     self._label_binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
     Y = self._label_binarizer.fit_transform(y)

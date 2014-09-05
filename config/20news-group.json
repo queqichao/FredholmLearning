@@ -10,7 +10,8 @@
     "num_unlabeled": 10000,
     "noise_scale": 0.0,
     "labels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-    "permutation": true
+    "permutation": true,
+    "SVD_components": 1000
   },
   "classifiers": [
     {
@@ -55,20 +56,6 @@
         "out_kernel": ["rbf"],
         "gamma": [30, 10, 3, 1],
         "nu": [1e10, 1e8, 1e6, 1e4, 1e2]
-      }
-    },
-    {
-      "name": "TSVM",
-      "semi-supervised": true,
-      "params": {
-        "kernel": "rbf",
-        "rbf_gamma": 0.1,
-        "C": 1000
-      },
-      "params_grid": {
-        "kernel": ["rbf"],
-        "rbf_gamma": [3, 1, 0.3, 0.1],
-        "C": [1e10, 1e8, 1e6, 1e4, 1e2]
       }
     },
     {

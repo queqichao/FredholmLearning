@@ -5,39 +5,40 @@ from matplotlib import pyplot as plt
 
 class SemiSupervisedDataSet:
   def training_data(self):
-    return self._training_data
+    return self._data[self._training_indices]
 
   def training_labels(self):
-    return self._training_labels
+    return self._labels[self._training_indices]
 
   def num_training(self):
-    return self._training_data.shape[0]
+    return self._num_training
 
   def testing_data(self):
-    return self._testing_data
+    return self._data[self._testing_indices]
 
   def testing_labels(self):
-    return self._testing_labels
+    return self._labels[self._testing_indices]
 
   def num_testing(self):
-    return self._testing_data.shape[0]
+    return self._num_testing
 
   def unlabeled_data(self):
-    return self._unlabeled_data
+    return self._data[self._unlabeled_indices]
 
   def num_unlabeled(self):
-    return self._unlabeled_data.shape[0]
+    return self._num_unlabeled
 
+  @profile
   def semi_supervised_data(self):
-    return np.concatenate((self._training_data, self._unlabeled_data), axis=0)
+    return np.concatenate((self.training_data(), self.unlabeled_data()), axis=0)
 
   def semi_supervised_labels(self):
-    return np.concatenate((self._training_labels, -np.ones((self.num_unlabeled(),))), axis=0)
+    return np.concatenate((self.training_labels(), -np.ones((self.num_unlabeled(),))), axis=0)
 
   def visualize(self, indices, colors=[]):
     internal_colors = ['b','g','r','c','m','y','k','w']
-    data = np.concatenate((self._training_data, self._testing_data), axis=0)
-    label = np.concatenate((self._training_labels, self._testing_labels),axis=0)
+    data = np.concatenate((self.training_data(), self.testing_data()), axis=0)
+    label = np.concatenate((self.training_labels(), self.testing_labels()),axis=0)
     if len(np.unique(label)) > len(internal_colors) and len(colors)==0:
       raise NameError("Number of classes is more that the number of internal colors. You need to specify the color explicitly.")
     if len(colors)==0:
@@ -55,13 +56,15 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
     self._num_unlabeled = dataset_config["num_unlabeled"]
     self._dim = dataset_config["dim"]
     self._noise_scale = dataset_config["noise_scale"]
-    self._training_data, self._training_labels = self._synthesize_data(
-      self._num_training, self._dim, self._noise_scale, self._name)
-    self._testing_data, self._testing_labels = self._synthesize_data(
-      self._num_testing, self._dim, self._noise_scale, self._name)
-    self._unlabeled_data,_ = self._synthesize_data(
-      self._num_unlabeled, self._dim, self._noise_scale, self._name)
-
+    num_data = self._num_training+self._num_unlabeled+self._num_testing
+    self._data = self._synthesize_data(num_data,
+                                       self._dim,
+                                       self._noise_scale,
+                                       self._name)
+    self._training_indices = np.array(range(self._num_training))
+    self._unlabeled_indicies = np.array(range(self._num_training, self._num_training+self._num_unlabeled))
+    self._testing_indices = np.array(range(self._num_training+self._num_unlabeled, num_data))
+    
   def _generate_circle_data(self, num_data, dim, noise_scale):
     X = np.random.uniform(0, 1, num_data)
     data = np.array([[np.cos(2*np.pi*x), np.sin(2*np.pi*x)] for x in X])
@@ -125,51 +128,25 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
     return data,labels
 
 class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
+  @profile
   def __init__(self, dataset):
-    if dataset["name"] == 'mnist':
-      self._load_mnist(dataset)
-    elif dataset["name"] == '20news_group':
-      self._load_20news_group(dataset)
-
-  def _load_mnist(self, dataset):
-    if "dataset" in dataset:
-      data, labels = mnist.read(dataset["labels"], path=dataset["path"], dataset=dataset["dataset"])
-    else:
-      data,labels = mnist.read(dataset["labels"], path=dataset["path"])
-    data = np.array([x.flatten() for x in data])
-    if dataset["permutation"]:
-      data,labels = self._permutation(data, labels, dataset)
-    data = data*1.0/255
-    labels = labels*1.0
-    if dataset["noise_scale"] > 0:
-      data = self._add_noise(data, dataset["noise_scale"])
-    self._split_dataset(data, labels, dataset)
-
-  def _load_20news_group(self, dataset):
-    if "dataset" in dataset:
-      data,labels = news_group.read(dataset["labels"], path=dataset["path"], dataset=dataset["dataset"])
-    else:
-      data,labels = news_group.read(dataset["labels"], path=dataset["path"])
-    if dataset["permutation"]:
-      data,labels = self._permutation(data, labels, dataset)
-    else:
-      raise NameError("For 20 news group dataset, the documents are ordered by labels, so please specify the permutation as True, otherwise the training data will only come from the groups in the beginning.")
-    data = data*1.0
-    labels = labels*1.0
-    if dataset["noise_scale"] > 0:
-      data = self._add_noise(data, dataset["noise_scale"])
-    self._split_dataset(data, labels, dataset)
-
-  def _split_dataset(self, data, labels, dataset):
-    num_data = data.shape[0]
     self._num_training = dataset["num_training"]
     self._num_unlabeled = dataset["num_unlabeled"]
-    self._training_data = data[0:self._num_training]
-    self._training_labels = labels[0:self._num_training]
-    self._unlabeled_data = data[self._num_training:self._num_training+self._num_unlabeled]
-    self._testing_data = data[self._num_training:num_data]
-    self._testing_labels = labels[self._num_training:num_data]
-    self._num_testing = self._testing_data.shape[0]
+    if dataset["name"] == 'mnist':
+      self._data, self._labels = mnist.read(dataset)
+    elif dataset["name"] == '20news_group':
+      self._data, self._labels = news_group.read(dataset)
+
+    if dataset["noise_scale"] > 0:
+      self._add_noise(self._data, dataset["noise_scale"])
+    self._split_dataset()
+
+  def _split_dataset(self):
+    num_data = self._data.shape[0]
+    self._training_indices = np.array(range(0, self._num_training))
+    self._unlabeled_indices = np.array(range(self._num_training, self._num_training+self._num_unlabeled))
+    self._testing_indices = np.array(range(self._num_training,num_data))
+    self._num_testing = self._testing_indices.shape[0]
 
   def _permutation(self, data, labels, dataset):
     num_data = data.shape[0]
@@ -183,4 +160,4 @@ class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
   def _add_noise(self, X, noise_scale):
     num_data = X.shape[0]
     dim = X.shape[1]
-    return X+np.random.normal(0, noise_scale, (num_data, dim,))
+    X += np.random.normal(0, noise_scale, (num_data, dim,))

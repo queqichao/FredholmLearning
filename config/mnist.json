@@ -1,14 +1,15 @@
 {
-  "cross_validation": true,
+  "cross_validation": false,
   "n_folds": 5,
   "dataset": {
-    "name": "mnist_train",
+    "name": "mnist",
     "type": "existing",
+    "dataset": "training",
     "path": "../data/mnist/",
-    "num_training": 200,
-    "num_unlabeled": 2000,
-    "noise_scale": 0.3,
-    "digits": [3, 8],
+    "num_training": 300,
+    "num_unlabeled": 10000,
+    "noise_scale": 0.0,
+    "labels": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     "permutation": true
   },
   "classifiers": [
@@ -23,7 +24,7 @@
       "params_grid": {
         "C": [1e10, 1e8, 1e6, 1e4, 1e2, 1],
         "kernel": ["rbf"],
-        "gamma": [3, 1, 0.3, 0.1]
+        "gamma": [3, 1, 0.3, 0.1, 0.03]
       }
     },
     {
@@ -36,8 +37,8 @@
       },
       "params_grid": {
         "kernel": ["rbf"],
-        "gamma": [3, 1, 0.3, 0.1],
-        "nu": [1e2, 1e1, 1, 1e-1, 1e-2]
+        "gamma": [30, 10, 3, 1],
+        "nu": [1e10, 1e8, 1e6, 1e4, 1e2]
       }
     },
     {
@@ -52,8 +53,8 @@
       "params_grid": {
         "in_kernel": ["rbf"],
         "out_kernel": ["rbf"],
-        "gamma": [3, 1, 0.3, 0.1],
-        "nu": [1e3, 1e2, 1e1, 1, 1e-1]
+        "gamma": [30, 10, 3, 1],
+        "nu": [1e10, 1e8, 1e6, 1e4, 1e2]
       }
     },
     {
@@ -67,7 +68,7 @@
       "params_grid": {
         "kernel": ["rbf"],
         "rbf_gamma": [3, 1, 0.3, 0.1],
-        "C": [1e6, 1e5, 1e4, 1e3, 1e2]
+        "C": [1e10, 1e8, 1e6, 1e4, 1e2]
       }
     },
     {
@@ -80,9 +81,9 @@
         "nu2": 1000
       },
       "params_grid": {
-        "rbf_gamma": [3, 1, 0.3, 0.1],
+        "rbf_gamma": [30, 10, 3, 1],
         "normalize_laplacian": [false],
-        "nu1": [1e6, 1e5, 1e4, 1e3, 1e2],
+        "nu1": [1e10, 1e8, 1e6, 1e4, 1e2],
         "nu2": [1000]
       }
     }
