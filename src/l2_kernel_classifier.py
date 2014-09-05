@@ -5,20 +5,29 @@ from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.externals import six
 from sklearn.base import BaseEstimator, ClassifierMixin
 from abc import ABCMeta
+import util
 
 class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator), ClassifierMixin):
+
+  def get_label_matrix(self, y):
+    return util.cast_to_float32(self._label_binarizer.fit_transform(y))
 
   @profile
   def fit(self, kernel_matrix, y):
     self._label_binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
-    Y = self._label_binarizer.fit_transform(y)
-    self.coef_ = np.empty((Y.shape[1], kernel_matrix.shape[1]))
-    num_training = kernel_matrix.shape[0]
-    kernel_matrix[np.diag_indices(num_training)] += self.nu
+    Y = self.get_label_matrix(y)
+    self.coef_ = np.empty((Y.shape[1], kernel_matrix.shape[1]), dtype=np.float32)
+    num_data = kernel_matrix.shape[0]
+    kernel_matrix[np.diag_indices(num_data)] += self.nu
+    cond_num = np.linalg.cond(kernel_matrix)
     for i in range(Y.shape[1]):
       y_column = Y[:,i]
-      self.coef_[i] = np.linalg.solve(kernel_matrix, y_column)
-    
+      if np.isinf(cond_num):
+        self.coef_[i] = np.linalg.lstsq(kernel_matrix, y_column)[0]
+      else:
+        self.coef_[i] = np.linalg.solve(kernel_matrix, y_column)
+  
+  @profile    
   def predict(self, kernel_matrix):
     scores = self.decision_function(kernel_matrix)
     if len(scores.shape) == 1:
@@ -48,16 +57,17 @@ class L2KernelClassifier(BaseL2KernelClassifier):
   
   @profile
   def fit(self, X, y):
-    self.X_ = X
-    kernel_matrix = pairwise_kernels(X, metric=self.kernel, filter_params=True, gamma=self.gamma, degree=self.degree, coef0=self.coef0)
+    self.X_ = util.cast_to_float32(X)
+    kernel_matrix = pairwise_kernels(util.cast_to_float32(X), metric=self.kernel, filter_params=True, gamma=self.gamma, degree=self.degree, coef0=self.coef0)
     super(L2KernelClassifier, self).fit(kernel_matrix, y)
 
+  @profile
   def predict(self, X):
-    kernel_matrix = pairwise_kernels(X, self.X_, metric=self.kernel, filter_params=True, gamma=self.gamma, degree=self.degree, coef0=self.coef0)
+    kernel_matrix = pairwise_kernels(util.cast_to_float32(X), self.X_, metric=self.kernel, filter_params=True, gamma=self.gamma, degree=self.degree, coef0=self.coef0)
     return super(L2KernelClassifier, self).predict(kernel_matrix)
 
 class L2FredholmClassifier(BaseL2KernelClassifier):
-  def __init__(self, nu=1.0, in_kernel='rbf', out_kernel='rbf', gamma=0.0):
+  def __init__(self, nu=1.0, in_kernel=['rbf'], out_kernel='rbf', gamma=0.0):
     self.nu = nu
     self.in_kernel=in_kernel
     self.out_kernel = out_kernel
@@ -65,17 +75,31 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
 
   @profile
   def fit(self, X, y):
-    self.X_ = X
+    self.X_ = util.cast_to_float32(X)
     labeled = y != -1
     self.labeled_ = labeled
-    in_kernel_matrix_uu = pairwise_kernels(X, metric=self.in_kernel, filter_params=True, gamma=self.gamma)
-    out_kernel_matrix_tru = pairwise_kernels(X[labeled], X, metric=self.out_kernel, filter_params=True, gamma=self.gamma)
-    kernel_matrix = np.dot(out_kernel_matrix_tru, np.dot(in_kernel_matrix_uu, out_kernel_matrix_tru.T))
+    in_kernel_matrix_uu = self.compute_in_kernel()
+    out_kernel_matrix_tru = pairwise_kernels(self.X_[labeled], self.X_, metric=self.out_kernel, filter_params=True, gamma=self.gamma)
+    kernel_matrix = np.dot(out_kernel_matrix_tru, np.dot(in_kernel_matrix_uu, out_kernel_matrix_tru.T)/self.X_.shape[0])/self.X_.shape[0]
     super(L2FredholmClassifier, self).fit(kernel_matrix, y[labeled])
 
+  @profile
   def predict(self, X):
-    in_kernel_matrix_uu = pairwise_kernels(self.X_, metric=self.in_kernel, filter_params=True, gamma=self.gamma)
-    out_kernel_matrix_teu = pairwise_kernels(X, self.X_, metric=self.out_kernel, filter_params=True, gamma=self.gamma)
+    in_kernel_matrix_uu = self.compute_in_kernel()
+    out_kernel_matrix_teu = pairwise_kernels(util.cast_to_float32(X), self.X_, metric=self.out_kernel, filter_params=True, gamma=self.gamma)
     out_kernel_matrix_tru = pairwise_kernels(self.X_[self.labeled_], self.X_, metric=self.out_kernel, filter_params=True, gamma=self.gamma)
-    kernel_matrix = np.dot(out_kernel_matrix_teu, np.dot(in_kernel_matrix_uu, out_kernel_matrix_tru.T))
+    kernel_matrix = np.dot(out_kernel_matrix_teu, np.dot(in_kernel_matrix_uu, out_kernel_matrix_tru.T)/self.X_.shape[0])/self.X_.shape[0]
     return super(L2FredholmClassifier, self).predict(kernel_matrix)
+
+  @profile
+  def compute_in_kernel(self):
+    if len(self.in_kernel) == 1:
+      return pairwise_kernels(self.X_, metric=self.in_kernel[0], filter_params=True, gamma=self.gamma)
+
+    for i,kernel in enumerate(self.in_kernel[:-1]):
+      if i==0:
+        in_kernel_matrix = pairwise_kernels(self.X_, metric=kernel, filter_params=True, gamma=self.gamma)
+      else:
+        in_kernel_matrix = np.dot(in_kernel_matrix, pairwise_kernels(self.X_, metric=kernel, filter_params=True, gamma=self.gamma))/self.X_.shape[0]
+    return np.dot(in_kernel_matrix, np.dot(pairwise_kernels(self.X_, metric=self.in_kernel[-1], filter_params=True, gamma=self.gamma), in_kernel_matrix.T)/self.X_.shape[0])/self.X_.shape[0]
+

@@ -42,24 +42,32 @@ def read(dataset):
                                   if labels[data_tuples[i][0]-1] in dataset["labels"]],
                              [data_tuples[i][1]-1
                                 for i in range(len(data_tuples))
-                                  if labels[data_tuples[i][0]-1] in dataset["labels"]])))
+                                  if labels[data_tuples[i][0]-1] in dataset["labels"]])),
+                           dtype=np.float32)
     nz_rows = np.unique(wc_sparse.nonzero()[0])
     wc_sparse = wc_sparse[nz_rows]
     labels = labels[nz_rows]
     tfidf_transformer = TfidfTransformer()
     tfidf = tfidf_transformer.fit_transform(wc_sparse)
-    svd = TruncatedSVD(n_components=dataset["SVD_components"])
+    if dataset["SVD"]:
+      svd = TruncatedSVD(n_components=dataset["SVD_components"])
 
     if "seed" in dataset:
       np.random.seed(dataset["seed"])
     
     if dataset["permutation"]:
       p = np.random.permutation(num_data)
-      data = svd.fit_transform(tfidf[p])
+      if dataset["SVD"]:
+        data = svd.fit_transform(tfidf[p])
+      else:
+        data = tfidf[p]
       labels = labels[p]
     else:
-      data = svd.fit_transform(tfidf)
-    return np.array([data[k] for k in range(num_data)], dtype=np.float32),np.array([labels[k] for k in range(num_data)], dtype=np.float32)
+      if dataset["SVD"]:
+        data = svd.fit_transform(tfidf)
+      else:
+        data = tfidf
+    return data, labels
 
  
 def get_data_tuples(data_path):

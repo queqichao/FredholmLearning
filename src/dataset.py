@@ -2,6 +2,8 @@ import numpy as np
 import mnist
 import news_group
 from matplotlib import pyplot as plt
+from scipy.sparse import issparse
+import util
 
 class SemiSupervisedDataSet:
   def training_data(self):
@@ -30,10 +32,10 @@ class SemiSupervisedDataSet:
 
   @profile
   def semi_supervised_data(self):
-    return np.concatenate((self.training_data(), self.unlabeled_data()), axis=0)
+    return self._data[np.concatenate((self._training_indices, self._unlabeled_indices), axis=0)]
 
   def semi_supervised_labels(self):
-    return np.concatenate((self.training_labels(), -np.ones((self.num_unlabeled(),))), axis=0)
+    return np.concatenate((self.training_labels(), -np.ones((self.num_unlabeled(),), dtype=np.float32)), axis=0)
 
   def visualize(self, indices, colors=[]):
     internal_colors = ['b','g','r','c','m','y','k','w']
@@ -136,7 +138,6 @@ class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
       self._data, self._labels = mnist.read(dataset)
     elif dataset["name"] == '20news_group':
       self._data, self._labels = news_group.read(dataset)
-
     if dataset["noise_scale"] > 0:
       self._add_noise(self._data, dataset["noise_scale"])
     self._split_dataset()
@@ -158,6 +159,9 @@ class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
     return data, labels
  
   def _add_noise(self, X, noise_scale):
-    num_data = X.shape[0]
-    dim = X.shape[1]
-    X += np.random.normal(0, noise_scale, (num_data, dim,))
+    if issparse(X):
+      X.data += util.cast_to_float32(np.random.normal(0, noise_scale, (len(X.data),)))
+    else:
+      num_data = X.shape[0]
+      dim = X.shape[1]
+      X += util.cast_to_float32(np.random.normal(0, noise_scale, (num_data, dim,)))

@@ -1,5 +1,5 @@
 {
-  "cross_validation": false,
+  "cross_validation": true,
   "n_folds": 5,
   "dataset": {
     "name": "20news_group",
@@ -11,6 +11,7 @@
     "noise_scale": 0.0,
     "labels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
     "permutation": true,
+    "SVD": false,
     "SVD_components": 1000
   },
   "classifiers": [
@@ -23,9 +24,9 @@
         "gamma": 0.1
       },
       "params_grid": {
-        "C": [1e10, 1e8, 1e6, 1e4, 1e2, 1],
+        "C": [1e10, 1e5, 1, 1e-5, 1e-10],
         "kernel": ["rbf"],
-        "gamma": [3, 1, 0.3, 0.1, 0.03]
+        "gamma": [10, 1, 0.1, 0.01]
       }
     },
     {
@@ -38,24 +39,40 @@
       },
       "params_grid": {
         "kernel": ["rbf"],
-        "gamma": [30, 10, 3, 1],
-        "nu": [1e10, 1e8, 1e6, 1e4, 1e2]
+        "gamma": [10, 1, 0.1, 0.01],
+        "nu": [1e10, 1e5, 1, 1e-5, 1e-10]
       }
     },
     {
       "name": "fredholm",
       "semi-supervised": true,
       "params": {
-        "in_kernel": "rbf",
+        "in_kernel": ["linear"],
         "out_kernel": "rbf",
         "gamma": 0.1,
         "nu": 0.03
       },
       "params_grid": {
-        "in_kernel": ["rbf"],
+        "in_kernel": [["linear"]],
         "out_kernel": ["rbf"],
-        "gamma": [30, 10, 3, 1],
-        "nu": [1e10, 1e8, 1e6, 1e4, 1e2]
+        "gamma": [10, 1, 0.1, 0.01],
+        "nu": [1e10, 1e5, 1, 1e-5, 1e-10]
+      }
+    },
+    {
+      "name": "fredholm",
+      "semi-supervised": true,
+      "params": {
+        "in_kernel": ["linear", "rbf"],
+        "out_kernel": "rbf",
+        "gamma": 0.1,
+        "nu": 0.03
+      },
+      "params_grid": {
+        "in_kernel": [["linear", "rbf"]],
+        "out_kernel": ["rbf"],
+        "gamma": [100, 10, 1, 0.1],
+        "nu": [1e10, 1e5, 1, 1e-5, 1e-10]
       }
     },
     {
@@ -64,13 +81,13 @@
       "params": {
         "rbf_gamma": 0.1,
         "normalize_laplacian": false,
-        "nu1": 1000,
+        "nu": 1000,
         "nu2": 1000
       },
       "params_grid": {
-        "rbf_gamma": [30, 10, 3, 1],
+        "rbf_gamma": [10, 1, 0.1, 0.01],
         "normalize_laplacian": [false],
-        "nu1": [1e10, 1e8, 1e6, 1e4, 1e2],
+        "nu": [1e10, 1e5, 1, 1e-5, 1e-10],
         "nu2": [1000]
       }
     }

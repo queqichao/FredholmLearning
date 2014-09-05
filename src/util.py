@@ -8,6 +8,8 @@ from tsvm import SVMLight
 from laprlsc import LapRLSC
 import smtplib
 from email.mime.text import MIMEText
+import numpy as np
+from scipy.sparse import issparse
 
 def get_classifier(classifier):
   if classifier["name"] == 'linear-ridge':
@@ -71,4 +73,9 @@ def evaluation_classifier(dataset, classifier, cross_validation=False, n_folds=N
   testing_pred_labels = c.predict(dataset.testing_data())
   return len([0 for i in range(dataset.num_testing()) if dataset.testing_labels()[i]==testing_pred_labels[i]])*1.0/dataset.num_testing()
 
-  
+def cast_to_float32(X):
+  if issparse(X):
+    X.data = np.float32(X.data)
+  else:
+    X = np.float32(X)
+  return X
