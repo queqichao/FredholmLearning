@@ -33,7 +33,7 @@ class LapRLSC(BaseEstimator, ClassifierMixin):
     self.coef_ = np.empty((Y.shape[1], num_data))
     self.rbf_gamma_ = (self.rbf_gamma if self.rbf_gamma is not None else 1.0/X.shape[1])
     kernel_matrix_ = rbf_kernel(X, gamma=self.rbf_gamma_)
-    kernel_matrix_ = 0.5*(kernel_matrix_+kernel_matrix_)
+    kernel_matrix_ = 0.5*(kernel_matrix_+kernel_matrix_.T)
     laplacian = graph_laplacian(kernel_matrix_, normed=self.normalize_laplacian)
     I = np.identity(num_data)
     J = np.diag(labeled.astype(np.double)) 
