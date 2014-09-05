@@ -39,7 +39,6 @@ for i in range(repeat):
   if plot_data:
     dataset.visualize([0, 1])
 
-  print(dataset.training_data().shape)
   for j, classifier in enumerate(classifiers):
     classifier["n_jobs"] = n_jobs
     if cross_validation:
