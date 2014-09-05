@@ -42,18 +42,9 @@ for i in range(repeat):
   for j, classifier in enumerate(classifiers):
     classifier["n_jobs"] = n_jobs
     if cross_validation:
-      c = util.get_cv_classifier(classifier, n_folds)
+      results[j].append(util.evaluation_classifier(dataset, classifier, cross_validation, n_folds))
     else:
-      c = util.get_classifier(classifier)
-    if classifier["semi-supervised"]:
-      c.fit(dataset.semi_supervised_data(), dataset.semi_supervised_labels())
-    else:
-      c.fit(dataset.training_data(), dataset.training_labels())
-    if cross_validation:
-      print(classifier["name"]+": "+str(c.best_params_))
-      classifier["params"] = c.best_params_
-    testing_pred_labels = c.predict(dataset.testing_data())
-    results[j].append(len([0 for i in range(dataset.num_testing()) if dataset.testing_labels()[i]==testing_pred_labels[i]])*1.0/dataset.num_testing())
+      results[j].append(util.evaluation_classifier(dataset, classifier))
 
 if cv_config_file != "":
   open(cv_config_file, 'w').write(json.dumps(config))

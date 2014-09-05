@@ -59,7 +59,7 @@ def read(dataset):
       labels = labels[p]
     else:
       data = svd.fit_transform(tfidf)
-    return np.array([data[k] for k in range(num_data)]),np.array([labels[k] for k in range(num_data)])
+    return np.array([data[k] for k in range(num_data)], dtype=np.float32),np.array([labels[k] for k in range(num_data)], dtype=np.float32)
 
  
 def get_data_tuples(data_path):

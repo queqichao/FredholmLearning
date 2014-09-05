@@ -72,7 +72,7 @@ def read(dataset):
       p = np.random.permutation(len(lbl))
       return np.array([img[p[k]] for k in range(len(lbl)) if lbl[p[k]] in dataset["labels"]]),np.array([lbl[p[k]] for k in range(len(lbl)) if lbl[p[k]] in dataset["labels"]])
     else:
-      return np.array([img[k] for k in range(len(lbl)) if lbl[k] in dataset["labels"]]),np.array([lbl[k] for k in range(len(lbl)) if lbl[k] in dataset["labels"]])
+      return np.array([img[k] for k in range(len(lbl)) if lbl[k] in dataset["labels"]], dtype=np.float32),np.array([lbl[k] for k in range(len(lbl)) if lbl[k] in dataset["labels"]], dtype=np.float32)
 
 def show(image):
     """

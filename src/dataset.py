@@ -57,12 +57,12 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
     self._dim = dataset_config["dim"]
     self._noise_scale = dataset_config["noise_scale"]
     num_data = self._num_training+self._num_unlabeled+self._num_testing
-    self._data = self._synthesize_data(num_data,
+    self._data, self._labels = self._synthesize_data(num_data,
                                        self._dim,
                                        self._noise_scale,
                                        self._name)
     self._training_indices = np.array(range(self._num_training))
-    self._unlabeled_indicies = np.array(range(self._num_training, self._num_training+self._num_unlabeled))
+    self._unlabeled_indices = np.array(range(self._num_training, self._num_training+self._num_unlabeled))
     self._testing_indices = np.array(range(self._num_training+self._num_unlabeled, num_data))
     
   def _generate_circle_data(self, num_data, dim, noise_scale):

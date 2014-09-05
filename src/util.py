@@ -52,4 +52,23 @@ def send_results(msg_string, from_addr, to_addr):
   s = smtplib.SMTP('localhost')
   s.sendmail(from_addr, [to_addr], msg.as_string())
   s.quit()
+
+@profile
+def evaluation_classifier(dataset, classifier, cross_validation=False, n_folds=None):
+  if cross_validation:
+    if n_folds == None:
+      raise NameError("n_folds should be specified if using cross validation")
+    c = get_cv_classifier(classifier, n_folds)
+  else:
+    c = get_classifier(classifier)
+  if classifier["semi-supervised"]:
+    c.fit(dataset.semi_supervised_data(), dataset.semi_supervised_labels())
+  else:
+    c.fit(dataset.training_data(), dataset.training_labels())
+  if cross_validation:
+    print(classifier["name"]+": "+str(c.best_params_))
+    classifier["params"] = c.best_params_
+  testing_pred_labels = c.predict(dataset.testing_data())
+  return len([0 for i in range(dataset.num_testing()) if dataset.testing_labels()[i]==testing_pred_labels[i]])*1.0/dataset.num_testing()
+
   
