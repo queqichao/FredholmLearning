@@ -63,8 +63,8 @@ def read(dataset):
     with open(fname_img, 'rb') as fimg:
         magic, num, rows, cols = struct.unpack(">IIII", fimg.read(16))
         img = np.fromfile(fimg, dtype=np.uint8).reshape(len(lbl), rows*cols)
-    img *= 1.0/255
-    lbl *= 1.0
+    img = img.astype(np.float32)/255
+    lbl = lbl.astype(np.float32)
     if "seed" in dataset:
       np.random.seed(dataset["seed"])
     
