@@ -9,9 +9,7 @@ which is GPL licensed.
 
 def read_images(digits, dataset = "training", path = "."):
     """
-    Python function for importing the MNIST data set.  It returns an iterator
-    of 2-tuples with the first element being the label and the second element
-    being a numpy.uint8 2D array of pixel data for the given image.
+    Python function for importing the MNIST data set.
     """
 
     if dataset == "training":

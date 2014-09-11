@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from scipy.sparse import issparse
 import util
 
-class SemiSupervisedDataSet:
+class SupervisedDataSet:
   def training_data(self):
     return self._data[self._training_indices]
 
@@ -24,19 +24,6 @@ class SemiSupervisedDataSet:
   def num_testing(self):
     return self._num_testing
 
-  def unlabeled_data(self):
-    return self._data[self._unlabeled_indices]
-
-  def num_unlabeled(self):
-    return self._num_unlabeled
-
-  @profile
-  def semi_supervised_data(self):
-    return self._data[np.concatenate((self._training_indices, self._unlabeled_indices), axis=0)]
-
-  def semi_supervised_labels(self):
-    return np.concatenate((self.training_labels(), -np.ones((self.num_unlabeled(),), dtype=np.float32)), axis=0)
-
   def visualize(self, indices, colors=[]):
     internal_colors = ['b','g','r','c','m','y','k','w']
     data = np.concatenate((self.training_data(), self.testing_data()), axis=0)
@@ -49,6 +36,21 @@ class SemiSupervisedDataSet:
       plt.plot([x[indices[0]] for (l,x) in zip(label, data) if l==ll], [x[indices[1]] for (l,x) in zip(label, data) if l==ll], '.', color=colors[i])
     plt.axis('equal')
     plt.show()
+
+class SemiSupervisedDataSet(SupervisedDataSet):
+
+  def unlabeled_data(self):
+    return self._data[self._unlabeled_indices]
+
+  def num_unlabeled(self):
+    return self._num_unlabeled
+
+  @profile
+  def semi_supervised_data(self):
+    return self._data[np.concatenate((self._training_indices, self._unlabeled_indices), axis=0)]
+
+  def semi_supervised_labels(self):
+    return np.concatenate((self.training_labels(), -np.ones((self.num_unlabeled(),), dtype=np.float32)), axis=0)
 
 class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
   def __init__(self, dataset_config):
@@ -165,3 +167,43 @@ class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
       num_data = X.shape[0]
       dim = X.shape[1]
       X += util.cast_to_float32(np.random.normal(0, noise_scale, (num_data, dim,)))
+
+class ImageDataSet:
+  def __init__(self, images):
+    self._images = images
+    self._num_images, self._i_h, self._i_w = self._images.shape[:3]
+    if len(self._images) >= 4:
+      self._n_channels = self._images.shape[3]
+    else:
+      self._n_channels = 1
+
+  def is_grayscale(self):
+    return self._n_channels == 1
+
+  def images(self):
+    return self._images
+
+  def num_images(self):
+    return self._num_images
+  
+  def extract_patches(self, patch_size, max_patches=None, random_state=None):
+    patch_extractor = PatchExtractor(patch_size=patch_size, max_patches = np.int(max_patches/self.num_images()), random_state=random_state)
+    return patch_extractor.transform(self._images)
+  
+  def to_array(self):
+    return images.reshape(self._num_images, self._i_h * self._i_w * self._n_channels)
+  
+  def from_array(self, data, image_size):
+    vec_len = image_size[0]*image_size[1]
+    num_data = data.shape[0]
+    i_h = image_size[0]
+    i_w = image_size[1]
+    if len(image_size) == 3:
+      vec_len *= image_size[2]
+      n_channels = image_size[2]
+  
+    if not data.shape[1] == vec_len:
+      raise NameError("Vector lenght in data must match the image sizes.")
+  
+    return self.__init__(data.reshape((num_data, i_h, i_w, n_channels)))
+ 
