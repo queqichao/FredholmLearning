@@ -2,7 +2,7 @@ import numpy as np
 from data import SynthesizedSemiSupervisedDataSet
 from data import ExistingSemiSupervisedDataSet
 import argparse
-import fredholm_kernel_learning.util
+import fredholm_kernel_learning.helper
 import json
 import getpass
 import socket
@@ -49,11 +49,11 @@ for i in range(repeat):
   for j, classifier in enumerate(classifiers):
     classifier["n_jobs"] = n_jobs
     if cross_validation:
-      results[j].append(fredholm_kernel_learning.util.evaluation_classifier(
+      results[j].append(fredholm_kernel_learning.helper.evaluation_classifier(
           dataset, classifier, cross_validation, n_folds))
     else:
       results[j].append(
-          fredholm_kernel_learning.util.evaluation_classifier(dataset,
+          fredholm_kernel_learning.helper.evaluation_classifier(dataset,
                                                               classifier))
 
 if cv_config_file != "":
@@ -65,7 +65,7 @@ for j, result in enumerate(results):
 
 result_str += "\n\nThe result json is:\n"
 result_str += json.dumps(config) + '\n'
-fredholm_kernel_learning.util.send_results(
+fredholm_kernel_learning.helper.send_results(
     result_str,
     getpass.getuser() + '@' + socket.gethostname() + '.cse.ohio-state.edu',
     'que@cse.ohio-state.edu')
