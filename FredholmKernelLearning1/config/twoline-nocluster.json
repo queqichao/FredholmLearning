@@ -1,0 +1,90 @@
+{
+  "cross_validation": false,
+  "n_folds": 5,
+  "dataset": {
+    "name": "twoline-nocluster",
+    "type": "synthesized",
+    "num_training": 200,
+    "num_unlabeled": 2000,
+    "num_testing": 1000,
+    "dim": 100, 
+    "noise_scale": 0.3
+  },
+  "classifiers": [
+    {
+      "name": "SVC",
+      "semi-supervised": false,
+      "params": {
+        "C": 1000,
+        "kernel": "rbf",
+        "gamma": 0.1
+      },
+      "params_grid": {
+        "C": [1e10, 1e8, 1e6, 1e4, 1e2, 1],
+        "kernel": ["rbf"],
+        "gamma": [3, 1, 0.3, 0.1]
+      }
+    },
+    {
+      "name": "l2-SVC",
+      "semi-supervised": false,
+      "params": {
+        "kernel": "rbf",
+        "gamma": 0.1,
+        "nu": 0.03
+      },
+      "params_grid": {
+        "kernel": ["rbf"],
+        "gamma": [3, 1, 0.3, 0.1],
+        "nu": [1e2, 1e1, 1, 1e-1, 1e-2]
+      }
+    },
+    {
+      "name": "fredholm",
+      "semi-supervised": true,
+      "params": {
+        "in_kernel": "rbf",
+        "out_kernel": "rbf",
+        "gamma": 0.1,
+        "nu": 0.03
+      },
+      "params_grid": {
+        "in_kernel": ["rbf"],
+        "out_kernel": ["rbf"],
+        "gamma": [3, 1, 0.3, 0.1],
+        "nu": [1e3, 1e2, 1e1, 1, 1e-1]
+      }
+    },
+    {
+      "name": "TSVM",
+      "semi-supervised": true,
+      "params": {
+        "kernel": "rbf",
+        "rbf_gamma": 0.1,
+        "C": 1000
+      },
+      "params_grid": {
+        "kernel": ["rbf"],
+        "rbf_gamma": [3, 1, 0.3, 0.1],
+        "C": [1e6, 1e5, 1e4, 1e3, 1e2]
+      }
+    },
+    {
+      "name": "Lap-RLSC",
+      "semi-supervised": true,
+      "params": {
+        "rbf_gamma": 0.1,
+        "normalize_laplacian": false,
+        "nu1": 1000,
+        "nu2": 1000
+      },
+      "params_grid": {
+        "rbf_gamma": [3, 1, 0.3, 0.1],
+        "normalize_laplacian": [false],
+        "nu1": [1e6, 1e5, 1e4, 1e3, 1e2],
+        "nu2": [1000]
+      }
+    }
+
+  ]
+}

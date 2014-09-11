@@ -1,0 +1,93 @@
+{
+  "cross_validation": true,
+  "n_folds": 5,
+  "dataset": {
+    "name": "mnist",
+    "type": "existing",
+    "dataset": "training",
+    "path": "../data/mnist/",
+    "num_training": 300,
+    "num_unlabeled": 10000,
+    "noise_scale": 0.0,
+    "labels": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "permutation": true
+  },
+  "classifiers": [
+    {
+      "name": "SVC",
+      "semi-supervised": false,
+      "params": {
+        "C": 1000,
+        "kernel": "rbf",
+        "gamma": 0.1
+      },
+      "params_grid": {
+        "C": [1e6, 1e3, 1, 1e-3, 1e-6],
+        "kernel": ["rbf"],
+        "gamma": [10, 1, 0.1, 0.01]
+      }
+    },
+    {
+      "name": "l2-SVC",
+      "semi-supervised": false,
+      "params": {
+        "kernel": "rbf",
+        "gamma": 0.1,
+        "nu": 0.03
+      },
+      "params_grid": {
+        "kernel": ["rbf"],
+        "gamma": [10, 1, 0.1, 0.01],
+        "nu": [1e6, 1e3, 1, 1e-3, 1e-6]
+      }
+    },
+    {
+      "name": "fredholm",
+      "semi-supervised": true,
+      "params": {
+        "in_kernel": ["rbf"],
+        "out_kernel": "rbf",
+        "gamma": 0.1,
+        "nu": 0.03
+      },
+      "params_grid": {
+        "in_kernel": [["rbf"]],
+        "out_kernel": ["rbf"],
+        "gamma": [10, 1, 0.1, 0.01],
+        "nu": [1e6, 1e3, 1, 1e-3, 1e-6]
+      }
+    },
+    {
+      "name": "fredholm",
+      "semi-supervised": true,
+      "params": {
+        "in_kernel": ["linear", "rbf"],
+        "out_kernel": "rbf",
+        "gamma": 0.1,
+        "nu": 0.03
+      },
+      "params_grid": {
+        "in_kernel": [["linear", "rbf"]],
+        "out_kernel": ["rbf"],
+        "gamma": [10, 1, 0.1, 0.01],
+        "nu": [1e6, 1e3, 1, 1e-3, 1e-6]
+      }
+    },
+    {
+      "name": "Lap-RLSC",
+      "semi-supervised": true,
+      "params": {
+        "rbf_gamma": 0.1,
+        "normalize_laplacian": false,
+        "nu": 1000,
+        "nu2": 1000
+      },
+      "params_grid": {
+        "rbf_gamma": [10, 1, 0.1, 0.01],
+        "normalize_laplacian": [false],
+        "nu": [1e6, 1e3, 1, 1e-3, 1e-6],
+        "nu2": [1]
+      }
+    }
+  ]
+}
