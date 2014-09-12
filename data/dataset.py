@@ -204,12 +204,12 @@ class ImageDataSet:
   def __init__(self, images):
     self._images = images
     self._num_images, self._i_h, self._i_w = self._images.shape[:3]
-    if len(self._images) >= 4:
+    if len(self._images.shape) >= 4:
       self._n_channels = self._images.shape[3]
     else:
       self._n_channels = 1
 
-  def is_grayscale(self):
+  def is_greyscale(self):
     return self._n_channels == 1
 
   def images(self):
@@ -234,9 +234,12 @@ class ImageDataSet:
     i_w = image_size[1]
     if len(image_size) == 3:
       vec_len *= image_size[2]
-      n_channels = image_size[2]
 
     if not data.shape[1] == vec_len:
       raise NameError("Vector lenght in data must match the image sizes.")
 
-    return ImageDataSet(data.reshape((num_data, i_h, i_w, n_channels)))
+    if len(image_size) == 3:
+      n_channels = image_size[2]
+      return ImageDataSet(data.reshape((num_data, i_h, i_w, n_channels)))
+    else:
+      return ImageDataSet(data.reshape((num_data, i_h, i_w)))

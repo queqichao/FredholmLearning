@@ -8,32 +8,49 @@ which is GPL licensed.
 """
 
 
-def read_images(digits, dataset="training", path="."):
+def read_images(dataset):
   """
   Python function for importing the MNIST data set.
   """
+  if "dataset" not in dataset:
+    raise NameError("dataset need to specified.")
 
-  if dataset == "training":
-    fname_img = os.path.join(path, 'train-images-idx3-ubyte')
-    fname_lbl = os.path.join(path, 'train-labels-idx1-ubyte')
-  elif dataset == "testing":
-    fname_img = os.path.join(path, 't10k-images-idx3-ubyte')
-    fname_lbl = os.path.join(path, 't10k-labels-idx1-ubyte')
+  if dataset["dataset"] == "training":
+    fname_img = os.path.join(dataset["path"], 'train-images-idx3-ubyte')
+    fname_lbl = os.path.join(dataset["path"], 'train-labels-idx1-ubyte')
+  elif dataset["dataset"] == "testing":
+    fname_img = os.path.join(dataset["path"], 't10k-images-idx3-ubyte')
+    fname_lbl = os.path.join(dataset["path"], 't10k-labels-idx1-ubyte')
   else:
     raise ValueError("dataset must be 'testing' or 'training'")
 
   # Load everything in some numpy arrays
   with open(fname_lbl, 'rb') as flbl:
     magic, num = struct.unpack(">II", flbl.read(8))
-    lbl = np.fromfile(flbl, dtype=np.int8)
+    lbl = np.fromfile(flbl, dtype=np.uint8)
 
   with open(fname_img, 'rb') as fimg:
     magic, num, rows, cols = struct.unpack(">IIII", fimg.read(16))
     img = np.fromfile(fimg, dtype=np.uint8).reshape(len(lbl), rows, cols)
 
-  indices = [k for k in range(img.shape[0]) if lbl[k] in digits]
+  if "seed" in dataset:
+    np.random.seed(dataset["seed"])
 
-  return img[indices], lbl[indices]
+  if dataset["permutation"]:
+    p = np.random.permutation(len(lbl))
+    return np.array([img[p[k]]
+                     for k in range(len(lbl))
+                     if lbl[p[k]] in dataset["labels"]]), \
+        np.array([lbl[p[k]]
+                  for k in range(len(lbl))
+                  if lbl[p[k]] in dataset["labels"]])
+  else:
+    return np.array([img[k]
+                     for k in range(len(lbl))
+                     if lbl[k] in dataset["labels"]], dtype=np.float32), \
+        np.array([lbl[k]
+                  for k in range(len(lbl))
+                  if lbl[k] in dataset["labels"]], dtype=np.float32)
 
 
 def read(dataset):
@@ -58,7 +75,7 @@ def read(dataset):
   # Load everything in some numpy arrays
   with open(fname_lbl, 'rb') as flbl:
     magic, num = struct.unpack(">II", flbl.read(8))
-    lbl = np.fromfile(flbl, dtype=np.int8)
+    lbl = np.fromfile(flbl, dtype=np.uint8)
 
   with open(fname_img, 'rb') as fimg:
     magic, num, rows, cols = struct.unpack(">IIII", fimg.read(16))
