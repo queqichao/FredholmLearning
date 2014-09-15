@@ -1,7 +1,6 @@
 import numpy as np
 from data import mnist
 from data import news_group
-from matplotlib import pyplot as plt
 from scipy.sparse import issparse
 import util
 from sklearn.feature_extraction.image import PatchExtractor
@@ -38,6 +37,7 @@ class SupervisedDataSet:
           "You need to specify the color explicitly.")
     if len(colors) == 0:
       colors = internal_colors
+    from matplotlib import pyplot as plt
     for i, ll in enumerate(np.unique(label)):
       plt.plot([x[indices[0]] for (l, x) in zip(label, data) if l == ll],
                [x[indices[1]] for (l, x) in zip(label, data) if l == ll],
@@ -227,6 +227,7 @@ class ImageDataSet:
     return self._images.reshape(
         self._num_images, self._i_h * self._i_w * self._n_channels)
 
+  @staticmethod
   def from_array(data, image_size):
     vec_len = image_size[0] * image_size[1]
     num_data = data.shape[0]

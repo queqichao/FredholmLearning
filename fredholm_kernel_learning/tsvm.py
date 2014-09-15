@@ -86,6 +86,6 @@ class SVMLight(BaseEstimator, ClassifierMixin):
 
   def __vector2words(self, v):
     if issparse(v):
-      return [(i, x) for i, x in zip(x.nonzero()[1], x.data)]
+      return [(i, x) for i, x in zip(v.nonzero()[1], v.data)]
     else:
       return [(i + 1, x) for i, x in enumerate(v) if x != 0.0]

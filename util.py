@@ -1,7 +1,5 @@
 import numpy as np
 from scipy.sparse import issparse
-from matplotlib import pyplot as plt
-import matplotlib as mpl
 
 def cast_to_float32(X):
   if issparse(X):
@@ -11,7 +9,7 @@ def cast_to_float32(X):
   return X
 
 
-def contrast_normalization(X, bias=10, copy=True):
+def contrast_normalization(X, bias=3, copy=True):
   means = np.mean(X, axis=1)
   stds = np.std(X, axis=1) + bias
   if copy:
@@ -22,7 +20,7 @@ def contrast_normalization(X, bias=10, copy=True):
     return X
 
 
-def show_images_matrix(images, save_path=''):
+def show_images_matrix(images, save_path):
   num_images = images.shape[0]
   ROW = np.int(np.sqrt(num_images))
   COL = np.int(num_images / ROW)
@@ -53,14 +51,15 @@ def show_images_matrix(images, save_path=''):
           r * (i_h + 1):(r + 1) * (i_h + 1) - 1,
           c * (i_w + 1):(c + 1) * (i_w + 1) - 1, :] = images[i]
 
+  import matplotlib as mpl
+  mpl.use('Agg')  
+  from matplotlib import pyplot as plt
+
   if is_greyscale:
     plt.imshow(image_matrix, cmap=mpl.cm.Greys)
   else:
     plt.imshow(image_matrix)
-  if len(save_path) == 0:
-    plt.show()
-  else:
-    plt.savefig(save_path)
+  plt.savefig(save_path)
 
 
 def cut_off_values(X, mn, mx):

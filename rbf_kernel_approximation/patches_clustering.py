@@ -5,7 +5,6 @@ import argparse
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import numpy as np
-from matplotlib import pyplot as plt
 from data import dataset
 import util
 
@@ -26,12 +25,12 @@ patches = dataset.ImageDataSet(
         (data_config["patch_h"], data_config["patch_w"]),
         max_patches=data_config["max_patches"]))
 data = patches.to_array().astype(np.float)
-data = util.contrast_normalization(data, bias=10, copy=False)
+data = util.contrast_normalization(data, bias=3, copy=False)
 pca = PCA(n_components=data_config["pca_components"], whiten=True)
 pca.fit(data)
 X = pca.transform(data)
 
-kmeans = KMeans(n_clusters=data_config["n_clusters"])
+kmeans = KMeans(n_clusters=data_config["n_clusters"], max_iter=data_config["max_iter"])
 kmeans.fit(X)
 centroids = kmeans.cluster_centers_
 
@@ -40,8 +39,8 @@ if data_config["inv_whitening"]:
 else:
   centroid_patches = np.dot(centroids, pca.components_) + pca.mean_
 
-mx = 1.5
-mn = -1.5
+mx = 2.5
+mn = -2.5
 new_data = (
     (util.cut_off_values(centroid_patches, mn, mx) - mn)
     / (mx - mn) * 255
@@ -53,6 +52,7 @@ if data_config["is_greyscale"]:
 else:
   new_patches = dataset.ImageDataSet.from_array(
       new_data, (data_config["patch_h"], data_config["patch_w"], 3))
-util.show_images_matrix(
-    new_patches.images()[:100],
-    save_path=data_config['name'] + '_centroids.png')
+for i in range(np.int(data_config["n_clusters"]/100)):
+  util.show_images_matrix(
+      new_patches.images()[i*100:(i+1)*100],
+      data_config['name'] + '_centroids_' + str(i) + '.png')
