@@ -4,6 +4,7 @@ from data import news_group
 from scipy.sparse import issparse
 import util
 from sklearn.feature_extraction.image import PatchExtractor
+import struct
 
 
 class SupervisedDataSet:
@@ -202,6 +203,8 @@ class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
 class ImageDataSet:
 
   def __init__(self, images):
+    if not images.dtype == np.uint8:
+      raise TypeError("The dtype of image must be numpy.uint8")
     self._images = images
     self._num_images, self._i_h, self._i_w = self._images.shape[:3]
     if len(self._images.shape) >= 4:
@@ -221,7 +224,7 @@ class ImageDataSet:
   def extract_patches(self, patch_size, max_patches=None, random_state=None):
     patch_extractor = PatchExtractor(patch_size=patch_size, max_patches=np.int(
         max_patches / self.num_images()), random_state=random_state)
-    return patch_extractor.transform(self._images)
+    return patch_extractor.transform(self._images).astype(np.uint8)
 
   def to_array(self):
     return self._images.reshape(
@@ -244,3 +247,23 @@ class ImageDataSet:
       return ImageDataSet(data.reshape((num_data, i_h, i_w, n_channels)))
     else:
       return ImageDataSet(data.reshape((num_data, i_h, i_w)))
+
+  def to_bin_file(self, file_name):
+    fid = open(file_name, 'wb')
+    fid.write(struct.pack(
+        'IIII', self._num_images, self._i_h, self._i_w, self._n_channels))
+    fid.write(self._images.tostring())
+    fid.close()
+
+  @staticmethod
+  def from_bin_file(file_name):
+    fid = open(file_name, 'rb')
+    num_images, i_h, i_w, n_channels = struct.unpack('IIII', fid.read(16))
+    s = fid.read()
+    fid.close()
+    if n_channels == 1:
+      return ImageDataSet(np.fromstring(s, dtype=np.uint8)
+          .reshape((num_images, i_h, i_w)))
+    else:
+      return ImageDataSet(np.fromstring(s, dtype=np.uint8)
+          .reshape((num_images, i_h, i_w, n_channels)))

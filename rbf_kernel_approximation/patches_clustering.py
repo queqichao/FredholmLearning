@@ -10,8 +10,10 @@ from data import dataset
 import util
 
 parser = argparse.ArgumentParser()
-parser.add_argument('config_file', help='Config file', type=str)
+parser.add_argument('config_file', help='Config file.', type=str)
 args = parser.parse_args()
+
+config_file = args.config_file
 
 config = json.loads(open(args.config_file).read())
 data_config = config["dataset"]
@@ -20,7 +22,7 @@ if data_config["name"] == "mnist":
 elif data_config["name"] == "cifar10":
   images, _ = cifar10.read_images(data_config)
 
-image_data = dataset.ImageDataSet(images)
+image_data = dataset.ImageDataSet(images.astype(np.uint8))
 patches = dataset.ImageDataSet(
     image_data.extract_patches(
         (data_config["patch_h"], data_config["patch_w"]),
@@ -47,17 +49,19 @@ centroids = kmeans.cluster_centers_
 
 mx = data_config["cut_off"]
 mn = -data_config["cut_off"]
-new_data = (
+centroids_img = (
     (util.cut_off_values(centroids, mn, mx) - mn)
     / (mx - mn) * 255
 ).astype(np.uint8)
 
 if data_config["is_greyscale"]:
-  new_patches = dataset.ImageDataSet.from_array(
-      new_data, (data_config["patch_h"], data_config["patch_w"]))
+  centroids_img = dataset.ImageDataSet.from_array(
+      centroids_img, (data_config["patch_h"], data_config["patch_w"]))
 else:
-  new_patches = dataset.ImageDataSet.from_array(
-      new_data, (data_config["patch_h"], data_config["patch_w"], 3))
+  centroids_img = dataset.ImageDataSet.from_array(
+      centroids_img, (data_config["patch_h"], data_config["patch_w"], 3))
+centroids_img.to_bin_file(data_config['name']+'_centroids_img.bin')
+
 for i in range(np.int(data_config["cluster_parm"]["n_clusters"]/100)):
   util.show_images_matrix(
       new_patches.images()[i*100:(i+1)*100],
