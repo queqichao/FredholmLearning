@@ -64,7 +64,7 @@ for j, result in enumerate(results):
 
 result_str += "\n\nThe result json is:\n"
 result_str += json.dumps(config) + '\n'
-fredholm_kernel_learning.helper.send_results(
+classifier_help.send_results(
     result_str,
     getpass.getuser() + '@' + socket.gethostname() + '.cse.ohio-state.edu',
     'que@cse.ohio-state.edu')

@@ -20,7 +20,7 @@ def contrast_normalization(X, bias=3, copy=True):
     return X
 
 
-def show_images_matrix(images, save_path):
+def show_images_matrix(images, ax):
   num_images = images.shape[0]
   ROW = np.int(np.sqrt(num_images))
   COL = np.int(num_images / ROW)
@@ -51,16 +51,11 @@ def show_images_matrix(images, save_path):
           r * (i_h + 1):(r + 1) * (i_h + 1) - 1,
           c * (i_w + 1):(c + 1) * (i_w + 1) - 1, :] = images[i]
 
-  import matplotlib as mpl
-  mpl.use('Agg')  
-  from matplotlib import pyplot as plt
-
   if is_greyscale:
-    imgplot = plt.imshow(image_matrix, cmap=mpl.cm.Greys)
+    imgplot = ax.imshow(image_matrix, cmap=mpl.cm.Greys)
   else:
-    imgplot = plt.imshow(image_matrix)
+    imgplot = ax.imshow(image_matrix)
   imgplot.set_interpolation('nearest')
-  plt.savefig(save_path)
 
 
 def cut_off_values(X, mn, mx):
