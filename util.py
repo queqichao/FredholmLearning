@@ -20,7 +20,7 @@ def contrast_normalization(X, bias=3, copy=True):
     return X
 
 
-def show_images_matrix(images, ax):
+def show_images_matrix(images, ax, cmap):
   num_images = images.shape[0]
   ROW = np.int(np.sqrt(num_images))
   COL = np.int(num_images / ROW)
@@ -52,7 +52,7 @@ def show_images_matrix(images, ax):
           c * (i_w + 1):(c + 1) * (i_w + 1) - 1, :] = images[i]
 
   if is_greyscale:
-    imgplot = ax.imshow(image_matrix, cmap=mpl.cm.Greys)
+    imgplot = ax.imshow(image_matrix, cmap=cmap)
   else:
     imgplot = ax.imshow(image_matrix)
   imgplot.set_interpolation('nearest')

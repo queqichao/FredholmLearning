@@ -57,18 +57,20 @@ centroids_img = (
     / (mx - mn) * 255
 ).astype(np.uint8)
 
-if data_config["is_greyscale"]:
-  centroids_img = dataset.ImageDataSet.from_array(
-      centroids_img, (data_config["patch_h"], data_config["patch_w"]))
-else:
-  centroids_img = dataset.ImageDataSet.from_array(
-      centroids_img, (data_config["patch_h"], data_config["patch_w"], 3))
-centroids_img.to_bin_file(data_config['name']+'_centroids_img.bin')
-
 import matplotlib as mpl
 mpl.use('Agg')  
 from matplotlib import pyplot as plt
 
+if data_config["is_greyscale"]:
+  centroids_img = dataset.ImageDataSet.from_array(
+      centroids_img, (data_config["patch_h"], data_config["patch_w"]))
+  cmap = mpl.cm.Greys
+else:
+  centroids_img = dataset.ImageDataSet.from_array(
+      centroids_img, (data_config["patch_h"], data_config["patch_w"], 3))
+centroids_img.to_bin_file(data_config['name']+'_centroids_img.bin')
+  cmap = None
+
 for i in range(np.int(data_config["cluster_parm"]["n_clusters"]/100)):
-  util.show_images_matrix(centroids_img.images()[i*100:(i+1)*100], plt)
+  util.show_images_matrix(centroids_img.images()[i*100:(i+1)*100], plt, cmap)
   plt.savefig(data_config['name'] + '_centroids_' + str(i) + '.png')

@@ -9,6 +9,15 @@ import struct
 
 class SupervisedDataSet:
 
+  def __init__(self, data, labels, num_training):
+    self._data = data
+    num_data, self._dim = data.shape
+    self._labels = labels
+    self._num_training = num_training
+    self._num_testing = num_data-num_training
+    self._training_indices = np.array(range(self._num_training))
+    self._testing_indices = np.array(range(self._num_training, num_data))
+
   def training_data(self):
     return self._data[self._training_indices]
 
@@ -49,6 +58,19 @@ class SupervisedDataSet:
 
 class SemiSupervisedDataSet(SupervisedDataSet):
 
+  def __init__(self, data, labels, num_training, num_unlabeled):
+    self._data = data
+    self._labels = labels
+    num_data, self._dim = data.shape
+    self._num_training = num_training
+    self._num_unlabeled = num_unlabeled
+    self._num_testing = num_data-num_training-num_unlabeled
+    self._training_indices = np.array(range(self._num_training))
+    self._unlabeled_indices = np.array(
+        range(self._num_training, self._num_training + self._num_unlabeled))
+    self._testing_indices = np.array(
+        range(self._num_training + self._num_unlabeled, num_data))
+
   def unlabeled_data(self):
     return self._data[self._unlabeled_indices]
 
@@ -70,23 +92,20 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
 
   def __init__(self, dataset_config):
     self._name = dataset_config["name"]
-    self._num_training = dataset_config["num_training"]
-    self._num_testing = dataset_config["num_testing"]
-    self._num_unlabeled = dataset_config["num_unlabeled"]
-    self._dim = dataset_config["dim"]
+    num_training = dataset_config["num_training"]
+    num_testing = dataset_config["num_testing"]
+    num_unlabeled = dataset_config["num_unlabeled"]
+    dim = dataset_config["dim"]
     self._noise_scale = dataset_config["noise_scale"]
     num_data = self._num_training + self._num_unlabeled + self._num_testing
-    self._data, self._labels = self._synthesize_data(num_data,
-                                                     self._dim,
-                                                     self._noise_scale,
-                                                     self._name)
-    self._training_indices = np.array(range(self._num_training))
-    self._unlabeled_indices = np.array(
-        range(self._num_training, self._num_training + self._num_unlabeled))
-    self._testing_indices = np.array(
-        range(self._num_training + self._num_unlabeled, num_data))
+    data, labels = self._synthesize_data(num_data,
+                                         dim,
+                                         self._noise_scale,
+                                         self._name)
+    super().__init__(data, labels, num_training, num_unlabeled)
 
-  def _generate_circle_data(self, num_data, dim, noise_scale):
+  @classmethod
+  def _generate_circle_data(cls, num_data, dim, noise_scale):
     X = np.random.uniform(0, 1, num_data)
     data = np.array(
         [[np.cos(2 * np.pi * x), np.sin(2 * np.pi * x)] for x in X])
@@ -95,8 +114,9 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
          np.random.normal(0, noise_scale, (num_data, dim - 2,))), axis=1)
     return data
 
-  def _generate_circle_linear_data(self, num_data, dim, noise_scale):
-    data = self._generate_circle_data(num_data, dim, noise_scale)
+  @classmethod
+  def _generate_circle_linear_data(cls, num_data, dim, noise_scale):
+    data = cls._generate_circle_data(num_data, dim, noise_scale)
     label = np.zeros((num_data,), dtype=float)
     for i in range(num_data):
       if data[i][0] >= 0:
@@ -105,8 +125,9 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
         label[i] = 0
     return data, label
 
-  def _generate_circle_quad_data(self, num_data, dim, noise_scale):
-    data = self._generate_circle_data(num_data, dim, noise_scale)
+  @classmethod
+  def _generate_circle_quad_data(cls, num_data, dim, noise_scale):
+    data = cls._generate_circle_data(num_data, dim, noise_scale)
     label = np.zeros((num_data,), dtype=float)
     for i in range(num_data):
       if (data[i][0] >= 0 and data[i][1] >= 0) or \
@@ -116,7 +137,8 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
         label[i] = 0
     return data, label
 
-  def _generate_two_line(self, num_data, dim, noise_scale):
+  @classmethod
+  def _generate_two_line(cls, num_data, dim, noise_scale):
     X1 = np.random.uniform(-1, 1, num_data)
     X2 = np.concatenate((np.ones((num_data / 2,)), -np.ones((num_data / 2,)))
                         ) + np.random.normal(0, noise_scale, (num_data,))
@@ -125,34 +147,37 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
         (np.array([[x1, x2] for (x1, x2) in zip(X1, X2)]), X_res), axis=1)
     return data
 
+  @classmethod
   def _generate_two_line_w_cluster_assumption(
-          self, num_data, dim, noise_scale):
-    data = self._generate_two_line(num_data, dim, noise_scale)
+          cls, num_data, dim, noise_scale):
+    data = cls._generate_two_line(num_data, dim, noise_scale)
     label = np.zeros((num_data,), dtype=float)
     label[data[:, 1] >= 0] = 1
     label[data[:, 1] < 0] = 0
     return data, label
 
+  @classmethod
   def _generate_two_line_wo_cluster_assumption(
-          self, num_data, dim, noise_scale):
-    data = self._generate_two_line(num_data, dim, noise_scale)
+          cls, num_data, dim, noise_scale):
+    data = cls._generate_two_line(num_data, dim, noise_scale)
     label = np.zeros((num_data,), dtype=float)
     label[data[:, 0] >= 0] = 1
     label[data[:, 0] < 0] = 0
     return data, label
 
-  def _synthesize_data(self, num_data, dim, noise_scale, data_set_name):
+  @classmethod
+  def _synthesize_data(cls, num_data, dim, noise_scale, data_set_name):
     if data_set_name == 'circle-linear':
-      data, labels = self._generate_circle_linear_data(
+      data, labels = cls._generate_circle_linear_data(
           num_data, dim, noise_scale)
     elif data_set_name == 'circle-quad':
-      data, labels = self._generate_circle_quad_data(
+      data, labels = cls._generate_circle_quad_data(
           num_data, dim, noise_scale)
     elif data_set_name == 'twoline-cluster':
-      data, labels = self._generate_two_line_w_cluster_assumption(
+      data, labels = cls._generate_two_line_w_cluster_assumption(
           num_data, dim, noise_scale)
     elif data_set_name == 'twoline-nocluster':
-      data, labels = self._generate_two_line_wo_cluster_assumption(
+      data, labels = cls._generate_two_line_wo_cluster_assumption(
           num_data, dim, noise_scale)
     else:
       raise NameError('Not existing data_set_name: ' + data_set_name + '.')
@@ -162,41 +187,23 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
 class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
 
   def __init__(self, dataset):
-    self._num_training = dataset["num_training"]
-    self._num_unlabeled = dataset["num_unlabeled"]
+    num_training = dataset["num_training"]
+    num_unlabeled = dataset["num_unlabeled"]
     if dataset["name"] == 'mnist':
-      self._data, self._labels = mnist.read(dataset)
+      data, labels = mnist.read(dataset)
     elif dataset["name"] == '20news_group':
-      self._data, self._labels = news_group.read(dataset)
+      data, labels = news_group.read(dataset)
+    super().__init__(data, labels, num_training, num_unlabeled)
     if dataset["noise_scale"] > 0:
-      self._add_noise(self._data, dataset["noise_scale"])
-    self._split_dataset()
+      self._add_noise(dataset["noise_scale"])
 
-  def _split_dataset(self):
-    num_data = self._data.shape[0]
-    self._training_indices = np.array(range(0, self._num_training))
-    self._unlabeled_indices = np.array(
-        range(self._num_training, self._num_training + self._num_unlabeled))
-    self._testing_indices = np.array(range(self._num_training, num_data))
-    self._num_testing = self._testing_indices.shape[0]
-
-  def _permutation(self, data, labels, dataset):
-    num_data = data.shape[0]
-    if "seed" in dataset:
-      np.random.seed(dataset["seed"])
-    p = np.random.permutation(num_data)
-    data = data[p]
-    labels = labels[p]
-    return data, labels
-
-  def _add_noise(self, X, noise_scale):
-    if issparse(X):
-      X.data += util.cast_to_float32(
-          np.random.normal(0, noise_scale, (len(X.data),)))
+  def _add_noise(self, noise_scale):
+    if issparse(self._data):
+      self._data.data += util.cast_to_float32(
+          np.random.normal(0, noise_scale, (len(self._data.data),)))
     else:
-      num_data = X.shape[0]
-      dim = X.shape[1]
-      X += util.cast_to_float32(
+      num_data, dim = self._data.shape
+      self._data += util.cast_to_float32(
           np.random.normal(0, noise_scale, (num_data, dim,)))
 
 
@@ -230,8 +237,8 @@ class ImageDataSet:
     return self._images.reshape(
         self._num_images, self._i_h * self._i_w * self._n_channels)
 
-  @staticmethod
-  def from_array(data, image_size):
+  @classmethod
+  def from_array(cls, data, image_size):
     vec_len = image_size[0] * image_size[1]
     num_data = data.shape[0]
     i_h = image_size[0]
@@ -244,9 +251,9 @@ class ImageDataSet:
 
     if len(image_size) == 3:
       n_channels = image_size[2]
-      return ImageDataSet(data.reshape((num_data, i_h, i_w, n_channels)))
+      return cls(data.reshape((num_data, i_h, i_w, n_channels)))
     else:
-      return ImageDataSet(data.reshape((num_data, i_h, i_w)))
+      return cls(data.reshape((num_data, i_h, i_w)))
 
   def to_bin_file(self, file_name):
     fid = open(file_name, 'wb')
@@ -255,15 +262,15 @@ class ImageDataSet:
     fid.write(self._images.tostring())
     fid.close()
 
-  @staticmethod
-  def from_bin_file(file_name):
+  @classmethod
+  def from_bin_file(cls, file_name):
     fid = open(file_name, 'rb')
     num_images, i_h, i_w, n_channels = struct.unpack('IIII', fid.read(16))
     s = fid.read()
     fid.close()
     if n_channels == 1:
-      return ImageDataSet(np.fromstring(s, dtype=np.uint8)
+      return cls(np.fromstring(s, dtype=np.uint8)
           .reshape((num_images, i_h, i_w)))
     else:
-      return ImageDataSet(np.fromstring(s, dtype=np.uint8)
+      return cls(np.fromstring(s, dtype=np.uint8)
           .reshape((num_images, i_h, i_w, n_channels)))
