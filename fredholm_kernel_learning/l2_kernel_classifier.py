@@ -85,29 +85,28 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
     self.X_ = util.cast_to_float32(X)
     labeled = y != -1
     self.labeled_ = labeled
-    in_kernel_matrix_uu = self.compute_in_kernel()
-    out_kernel_matrix_tru = pairwise_kernels(
-        self.X_[labeled], self.X_, metric=self.out_kernel, filter_params=True,
-        gamma=self.gamma)
-    kernel_matrix = np.dot(
-        out_kernel_matrix_tru,
-        np.dot(in_kernel_matrix_uu, out_kernel_matrix_tru.T) / self.X_.shape[0]
-        ) / self.X_.shape[0]
+    kernel_matrix = self.fredholm_kernel(self.X_[labeled])
     super(L2FredholmClassifier, self).fit(kernel_matrix, y[labeled])
 
   def predict(self, X):
-    in_kernel_matrix_uu = self.compute_in_kernel()
-    out_kernel_matrix_teu = pairwise_kernels(
-        util.cast_to_float32(X), self.X_, metric=self.out_kernel,
-        filter_params=True, gamma=self.gamma)
-    out_kernel_matrix_tru = pairwise_kernels(
-        self.X_[self.labeled_], self.X_, metric=self.out_kernel,
-        filter_params=True, gamma=self.gamma)
-    kernel_matrix = np.dot(
-        out_kernel_matrix_teu,
-        np.dot(in_kernel_matrix_uu, out_kernel_matrix_tru.T) / self.X_.shape[0]
-    ) / self.X_.shape[0]
+    kernel_matrix = self.fredholm_kernel(X, Y=self.X_[self.labeled_])
     return super(L2FredholmClassifier, self).predict(kernel_matrix)
+
+  def fredholm_kernel(self, X, Y=None):
+    in_kernel_matrix_uu = self.compute_in_kernel()
+    out_kernel_matrix_xu = pairwise_kernels(
+        X, self.X_, metric=self.out_kernel, filter_params=True,
+        gamma=self.gamma)
+    if Y is None:
+      out_kernel_matrix_yu = out_kernel_matrix_xu
+    else:
+      out_kernel_matrix_yu = pairwise_kernels(
+          Y, self.X_, metric=self.out_kernel, filter_params=True,
+          gamma=self.gamma)
+    return np.dot(
+        out_kernel_matrix_xu,
+        np.dot(in_kernel_matrix_uu, out_kernel_matrix_yu.T) / self.X_.shape[0]
+    ) / self.X_.shape[0]
 
   def compute_in_kernel(self):
     if len(self.in_kernel) == 1:
