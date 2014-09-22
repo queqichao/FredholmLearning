@@ -81,12 +81,12 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
     self.out_kernel = out_kernel
     self.gamma = gamma
 
-  def fit(self, X, y):
-    self.X_ = util.cast_to_float32(X)
-    labeled = y != -1
+  def fit(self, X, y, unlabeled_data=None):
+    self.X_ = np.concatenate((util.cast_to_float32(X), util.cast_to_float32(unlabeled_data)))
+    labeled = range(X.shape[0])
     self.labeled_ = labeled
     kernel_matrix = self.fredholm_kernel(self.X_[labeled])
-    super(L2FredholmClassifier, self).fit(kernel_matrix, y[labeled])
+    super(L2FredholmClassifier, self).fit(kernel_matrix, y)
 
   def predict(self, X):
     kernel_matrix = self.fredholm_kernel(X, Y=self.X_[self.labeled_])

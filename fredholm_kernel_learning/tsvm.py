@@ -45,13 +45,14 @@ class SVMLight(BaseEstimator, ClassifierMixin):
 
     return self
 
-  def fit(self, X, y):
-    num_data = X.shape[0]
-    unlabeled = y == -1
-    labeled = y != -1
-    num_unlabeled = y[unlabeled].shape[0]
+  def fit(self, X, y, unlabeled_data=None):
+    num_data = X.shape[0]+unlabeled_data.shape[0]
+    num_unlabeled = unlabeled_data.shape[0]
+    labeled = range(X.shape[0])
+    unlabeled = range(X.shape[0], num_data)
+    X = np.concatenate((X, unlabeled_data))
     self._label_binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
-    Y_labeled = self._label_binarizer.fit_transform(y[labeled])
+    Y_labeled = self._label_binarizer.fit_transform(y)
     self.num_classes_ = Y_labeled.shape[1]
     Y_unlabeled = np.zeros(
         (num_unlabeled, self.num_classes_,), dtype=np.float32)

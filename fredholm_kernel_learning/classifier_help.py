@@ -67,7 +67,7 @@ def evaluation_classifier(dataset, classifier, cross_validation=False,
   else:
     c = get_classifier(classifier)
   if classifier["semi-supervised"]:
-    c.fit(dataset.semi_supervised_data(), dataset.semi_supervised_labels())
+    c.fit(dataset.training_data(), dataset.training_labels(), unlabeled_data=dataset.unlabeled_data())
   else:
     c.fit(dataset.training_data(), dataset.training_labels())
   if cross_validation:
