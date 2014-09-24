@@ -6,6 +6,7 @@ from sklearn.externals import six
 from sklearn.base import BaseEstimator, ClassifierMixin
 from abc import ABCMeta
 import util
+from scipy.sparse import issparse, vstack
 
 
 class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
@@ -82,7 +83,10 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
     self.gamma = gamma
 
   def fit(self, X, y, unlabeled_data=None):
-    self.X_ = np.concatenate((util.cast_to_float32(X), util.cast_to_float32(unlabeled_data)))
+    if issparse(X):
+      self.X_ = vstack((util.cast_to_float32(X), util.cast_to_float32(unlabeled_data)), format='csr')
+    else:
+      self.X_ = np.concatenate((util.cast_to_float32(X), util.cast_to_float32(unlabeled_data)))
     labeled = range(X.shape[0])
     self.labeled_ = labeled
     kernel_matrix = self.fredholm_kernel(self.X_[labeled])

@@ -4,6 +4,7 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.base import BaseEstimator, ClassifierMixin
 import svmlight as svm
 from scipy.sparse import issparse
+from scipy.sparse import vstack
 
 
 class SVMLight(BaseEstimator, ClassifierMixin):
@@ -50,7 +51,10 @@ class SVMLight(BaseEstimator, ClassifierMixin):
     num_unlabeled = unlabeled_data.shape[0]
     labeled = range(X.shape[0])
     unlabeled = range(X.shape[0], num_data)
-    X = np.concatenate((X, unlabeled_data))
+    if issparse(X):
+      X = vstack((X, unlabeled_data), format='csr')
+    else:
+      X = np.concatenate((X, unlabeled_data))
     self._label_binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
     Y_labeled = self._label_binarizer.fit_transform(y)
     self.num_classes_ = Y_labeled.shape[1]
