@@ -5,7 +5,6 @@ import argparse
 from sklearn.decomposition import PCA
 import numpy as np
 from data import dataset
-from rbf_kernel_approximation import RBFKernelRegression
 from sklearn.linear_model import RidgeClassifier
 import os
 from fredholm_kernel_learning import L2KernelClassifier
