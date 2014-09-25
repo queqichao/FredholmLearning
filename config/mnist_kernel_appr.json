@@ -1,0 +1,91 @@
+{
+  "dataset": {
+    "name": "mnist",
+    "type": "existing",
+    "dataset": "training",
+    "path": "../data/mnist/",
+    "labels": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "permutation": true,
+    "sample_patches": false,
+    "patch_h": 28,
+    "patch_w": 28,
+    "max_patches": 60000,
+    "is_greyscale": true
+  },
+  "dictionary_parm": {
+    "cluster_parm": {
+      "method": "kmeans",
+      "n_clusters": 200,
+      "max_iter": 500
+    }
+  },
+  "num_training": 2000,
+  "classifiers": [
+    {
+      "name": "rbf_kernel_appr",
+      "semi-supervised": false,
+      "params": {
+        "kernel_approximating_method": "kmeans_appr",
+        "gamma": 1e-7,
+        "subsample": 10000,
+        "alpha": 0.001,
+        "dictionary_file": "rbf_kernel_regression_dict.bin"
+      },
+      "params_grid": {
+        "kernel_approximating_method": ["kmeans_appr"],
+        "gamma": [1, 1e-2, 1e-4, 1e-6],
+        "subsample": [10000],
+        "alpha": [1, 1e-2, 1e-4, 1e-6, 1e-8],
+        "dictionary_file": ["rbf_kernel_regression_dict.bin"]
+      }
+    },
+    {
+      "name": "rbf_kernel_appr",
+      "semi-supervised": false,
+      "params": {
+        "kernel_approximating_method": "random_fourier",
+        "gamma": 1e-7,
+        "alpha": 0.001,
+        "n_components": 1000
+      },
+      "params_grid": {
+        "kernel_approximating_method": ["random_fourier"],
+        "gamma": [1, 1e-2, 1e-4, 1e-6],
+        "n_components": [1000],
+        "alpha": [1, 1e-2, 1e-4, 1e-6, 1e-8]
+      }
+    },
+    {
+      "name": "rbf_kernel_appr",
+      "semi-supervised": false,
+      "params": {
+        "kernel_approximating_method": "nystroem",
+        "gamma": 1e-7,
+        "alpha": 0.001,
+        "n_components": 1000
+      },
+      "params_grid": {
+        "kernel_approximating_method": ["nystroem"],
+        "gamma": [1, 1e-2, 1e-4, 1e-6],
+        "n_components": [1000],
+        "alpha": [1, 1e-2, 1e-4, 1e-6, 1e-8]
+      }
+    },
+    {
+      "name": "l2-SVC",
+      "semi-supervised": false,
+      "params": {
+        "kernel": "rbf",
+        "gamma": 1e-7,
+        "nu": 1e-7
+      },
+      "params_grid": {
+        "gamma": [1, 1e-2, 1e-4, 1e-6],
+        "kernel": ["rbf"],
+        "nu": [1, 1e-2, 1e-4, 1e-6, 1e-8]
+      }
+    }
+  ],
+  "nu": 0.001,
+  "gamma": 1e-7
+}
