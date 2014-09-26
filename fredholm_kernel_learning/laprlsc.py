@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelBinarizer
 import util
 from fredholm_kernel_learning import BaseL2KernelClassifier
 from scipy.sparse import vstack
-
+from scipy.sparse import issparse
 
 class LapRLSC(BaseL2KernelClassifier):
 
