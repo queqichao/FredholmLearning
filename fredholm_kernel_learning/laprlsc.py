@@ -25,7 +25,8 @@ class LapRLSC(BaseL2KernelClassifier):
     num_data = X.shape[0] + unlabeled_data.shape[0]
     num_labeled = X.shape[0]
     num_unlabeled = unlabeled_data.shape[0]
-    labeled = range(num_labeled)
+    labeled = np.zeros((num_data,), dtype=np.float32)
+    labeled[0:num_labeled] = 1.0;
     if issparse(X):
       self.X_ = vstack((util.cast_to_float32(X),
                         util.cast_to_float32(unlabeled_data)), format='csr')
@@ -36,7 +37,7 @@ class LapRLSC(BaseL2KernelClassifier):
         self.rbf_gamma if self.rbf_gamma is not None else 1.0 / X.shape[1])
     kernel_matrix_ = rbf_kernel(self.X_, gamma=self.rbf_gamma_)
     I = np.identity(num_data, dtype=np.float32)
-    A = np.dot(np.diag(labeled.astype(np.float32)), kernel_matrix_)
+    A = np.dot(np.diag(labeled), kernel_matrix_) + self.nu * I
     if self.nu2 != 0:
       laplacian_x_kernel = np.dot(graph_laplacian(
           kernel_matrix_, normed=self.normalize_laplacian), kernel_matrix_)
