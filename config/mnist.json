@@ -5,7 +5,7 @@
     "name": "mnist",
     "type": "existing",
     "dataset": "training",
-    "path": "../data/mnist/",
+    "path": "data/mnist/",
     "num_training": 500,
     "num_unlabeled": 10000,
     "noise_scale": 0.0,
