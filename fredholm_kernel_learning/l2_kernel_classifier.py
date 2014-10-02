@@ -101,16 +101,19 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
     out_kernel_matrix_xu = pairwise_kernels(
         X, self.X_, metric=self.out_kernel, filter_params=True,
         gamma=self.gamma)
+    if self.out_kernel == "rbf":
+      out_kernel_matrix_xu = out_kernel_matrix_xu/np.sum(out_kernel_matrix_xu, axis=1).reshape((X.shape[0],1))
     if Y is None:
       out_kernel_matrix_yu = out_kernel_matrix_xu
     else:
       out_kernel_matrix_yu = pairwise_kernels(
           Y, self.X_, metric=self.out_kernel, filter_params=True,
           gamma=self.gamma)
+      if self.out_kernel == "rbf":
+        out_kernel_matrix_yu = out_kernel_matrix_yu/np.sum(out_kernel_matrix_yu, axis=1).reshape((Y.shape[0],1))
     return np.dot(
         out_kernel_matrix_xu,
-        np.dot(in_kernel_matrix_uu, out_kernel_matrix_yu.T) / self.X_.shape[0]
-    ) / self.X_.shape[0]
+        np.dot(in_kernel_matrix_uu, out_kernel_matrix_yu.T))
 
   def compute_in_kernel(self):
     if len(self.in_kernel) == 1:
@@ -121,14 +124,15 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
       if i == 0:
         in_kernel_matrix = pairwise_kernels(
             self.X_, metric=kernel, filter_params=True, gamma=self.gamma)
+        if kernel == "rbf":
+          in_kernel_matrix = in_kernel_matrix/np.sum(in_kernel_matrix, axis=1).reshape((self.X_.shape[0],1))
       else:
-        in_kernel_matrix = np.dot(
-            in_kernel_matrix, pairwise_kernels(
-                self.X_, metric=kernel, filter_params=True, gamma=self.gamma)
-        ) / self.X_.shape[0]
-    return np.dot(
-        in_kernel_matrix,
-        np.dot(pairwise_kernels(
-            self.X_, metric=self.in_kernel[-1], filter_params=True,
-            gamma=self.gamma
-            ), in_kernel_matrix.T) / self.X_.shape[0]) / self.X_.shape[0]
+        K = pairwise_kernels(self.X_, metric=kernel, filter_params=True,
+                             gamma=self.gamma)
+        if kernel == "rbf":
+          K = K / np.sum(K, axis=1).reshape((self.X_.shape[0],1))
+        in_kernel_matrix = np.dot(in_kernel_matrix, K)
+    inner_kernel_matrix = pairwise_kernels(self.X_, metric=self.in_kernel[-1],
+                                           filter_params=True, gamma=self.gamma)
+    return np.dot(in_kernel_matrix,
+                  np.dot(inner_kernel_matrix, in_kernel_matrix.T))

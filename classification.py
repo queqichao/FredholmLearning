@@ -1,83 +1,70 @@
-from sklearn.linear_model import RidgeClassifier
-from sklearn.svm import SVC
-from sklearn.grid_search import GridSearchCV
-from sklearn.metrics.scorer import check_scoring
-from fredholm_kernel_learning import L2KernelClassifier
-from fredholm_kernel_learning import L2FredholmClassifier
-from fredholm_kernel_learning import SVMLight
-from fredholm_kernel_learning import LapRLSC
-from rbf_kernel_approximation import RBFKernelApprClassifier
-import smtplib
-from email.mime.text import MIMEText
+import numpy as np
+from data import SynthesizedSemiSupervisedDataSet
+from data import ExistingSemiSupervisedDataSet
+import argparse
+from fredholm_kernel_learning import classifier_help
+import json
+import getpass
+import socket
 
+parser = argparse.ArgumentParser()
+parser.add_argument('config_file', help='Config file', type=str)
+parser.add_argument(
+    '--repeat', help='Whether or not to repeat the experiment', type=int,
+    default=1)
+parser.add_argument(
+    '--plot_data', help='Whether or not to plot the data', action='store_true')
+parser.add_argument(
+    '--cv_config_file', help='Config file after cv', type=str, default="")
+parser.add_argument(
+    '--n_jobs', help='Number of jobs running in parallel', type=int, default=2)
+args = parser.parse_args()
 
-def get_classifier(classifier):
-  if classifier["name"] == 'linear-ridge':
-    c = RidgeClassifier()
-  elif classifier["name"] == 'SVC':
-    c = SVC()
-  elif classifier["name"] == "l2-SVC":
-    c = L2KernelClassifier()
-  elif classifier["name"] == "fredholm":
-    c = L2FredholmClassifier()
-  elif classifier["name"] == "TSVM":
-    c = SVMLight()
-  elif classifier["name"] == "Lap-RLSC":
-    c = LapRLSC()
-  elif classifier["name"] == "rbf_kernel_appr":
-    c = RBFKernelApprClassifier()
+config_file = args.config_file
+config = json.loads(open(config_file).read())
+cv_config_file = args.cv_config_file
+plot_data = args.plot_data
+repeat = args.repeat
+n_jobs = args.n_jobs
+
+dataset_config = config["dataset"]
+classifiers = config["classifiers"]
+cross_validation = config["cross_validation"]
+n_folds = config["n_folds"]
+
+results = [[] for x in range(len(classifiers))]
+
+for i in range(repeat):
+  if dataset_config["type"] == 'synthesized':
+    dataset = SynthesizedSemiSupervisedDataSet(dataset_config)
+  elif dataset_config["type"] == 'existing':
+    dataset = ExistingSemiSupervisedDataSet(dataset_config)
   else:
-    raise NameError('Not existing classifier: ' + classifier["name"] + '.')
-  c.set_params(**classifier["params"])
-  return c
+    raise NameError(
+        "Data set type: " + dataset_config["type"] + " does not exist.")
 
+  if plot_data:
+    dataset.visualize([0, 1])
 
-def get_cv_classifier(classifier, cv):
-  if classifier["name"] == 'linear-ridge':
-    c = RidgeClassifier()
-  elif classifier["name"] == 'SVC':
-    c = SVC()
-  elif classifier["name"] == "l2-SVC":
-    c = L2KernelClassifier()
-  elif classifier["name"] == "fredholm":
-    c = L2FredholmClassifier()
-  elif classifier["name"] == "TSVM":
-    c = SVMLight()
-  elif classifier["name"] == "Lap-RLSC":
-    c = LapRLSC()
-  elif classifier["name"] == "rbf_kernel_appr":
-    c = RBFKernelApprClassifier()
-  else:
-    raise NameError('Not existing classifier: ' + classifier["name"] + '.')
-  return GridSearchCV(c, classifier["params_grid"], scoring=check_scoring(c),
-                      fit_params={}, n_jobs=classifier["n_jobs"], cv=cv)
+  for j, classifier in enumerate(classifiers):
+    classifier["n_jobs"] = n_jobs
+    if cross_validation:
+      results[j].append(classifier_help.evaluation_classifier(
+          dataset, classifier, cross_validation, n_folds))
+    else:
+      results[j].append(
+          classifier_help.evaluation_classifier(dataset, classifier))
 
-def send_results(msg_string, from_addr, to_addr):
-  msg = MIMEText(msg_string)
-  msg['Subject'] = 'Results'
-  msg['From'] = from_addr
-  msg['To'] = to_addr
-  s = smtplib.SMTP('localhost')
-  s.sendmail(from_addr, [to_addr], msg.as_string())
-  s.quit()
+if cv_config_file != "":
+  open(cv_config_file, 'w').write(json.dumps(config))
 
+result_str = ''
+for j, result in enumerate(results):
+  result_str += classifiers[j]["name"] + ': ' + ', '.join([str(x) for x in result]) + "\nmean: " + str(np.mean(result)) + "; std:" + str(np.std(result)) + '\n'
 
-def evaluation_classifier(dataset, classifier, cross_validation=False,
-                          n_folds=None, fit_params={}):
-  if classifier["semi-supervised"]:
-    fit_params["unlabeled_data"] = dataset.unlabeled_data()
-  if cross_validation:
-    if n_folds is None:
-      raise NameError("n_folds should be specified if using cross validation")
-    c = get_cv_classifier(classifier, n_folds)
-    c.fit_params = fit_params
-    c.fit(dataset.training_data(), dataset.training_labels())
-    print(classifier["name"] + ": " + str(c.best_params_))
-    classifier["params"] = c.best_params_
-  else:
-    c = get_classifier(classifier)
-    c.fit(dataset.training_data(), dataset.training_labels(), **fit_params)
-  testing_pred_labels = c.predict(dataset.testing_data())
-  return len([0 for i in range(dataset.num_testing())
-              if dataset.testing_labels()[i] == testing_pred_labels[i]]
-             ) * 1.0 / dataset.num_testing()
+result_str += "\n\nThe result json is:\n"
+result_str += json.dumps(config) + '\n'
+classifier_help.send_results(
+    result_str,
+    getpass.getuser() + '@' + socket.gethostname() + '.cse.ohio-state.edu',
+    'que@cse.ohio-state.edu')
