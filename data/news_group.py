@@ -65,12 +65,16 @@ def read(dataset):
     p = np.random.permutation(num_data)
     if dataset["SVD"]:
       data = svd.fit_transform(tfidf[p])
+      if dataset["zero_centering"]:
+        data = data - np.mean(data, axis=0)
     else:
       data = tfidf[p]
     labels = labels[p]
   else:
     if dataset["SVD"]:
       data = svd.fit_transform(tfidf)
+      if dataset["zero_centering"]:
+        data = data - np.mean(data, axis=0)
     else:
       data = tfidf
   return data, labels
