@@ -6,7 +6,7 @@
     "type": "existing",
     "dataset": "training",
     "path": "../data/mnist/",
-    "num_training": 300,
+    "num_training": 500,
     "num_unlabeled": 10000,
     "noise_scale": 0.0,
     "labels": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -22,9 +22,9 @@
         "gamma": 0.1
       },
       "params_grid": {
-        "C": [1e6, 1e3, 1, 1e-3, 1e-6],
+        "C": [1e10, 1e9, 1e8, 1e7, 1e6],
         "kernel": ["rbf"],
-        "gamma": [10, 1, 0.1, 0.01]
+        "gamma": [0.3, 0.1, 0.03, 0.01]
       }
     },
     {
@@ -37,8 +37,8 @@
       },
       "params_grid": {
         "kernel": ["rbf"],
-        "gamma": [10, 1, 0.1, 0.01],
-        "nu": [1e6, 1e3, 1, 1e-3, 1e-6]
+        "gamma": [0.3, 0.1, 0.03, 0.01],
+        "nu": [1, 1e-1, 1e-2, 1e-3, 1e-4]
       }
     },
     {
@@ -53,24 +53,24 @@
       "params_grid": {
         "in_kernel": [["rbf"]],
         "out_kernel": ["rbf"],
-        "gamma": [10, 1, 0.1, 0.01],
-        "nu": [1e6, 1e3, 1, 1e-3, 1e-6]
+        "gamma": [0.3, 0.1, 0.03, 0.01],
+        "nu": [1e-6, 1e-7, 1e-8, 1e-9, 1e-10]
       }
     },
     {
       "name": "fredholm",
       "semi-supervised": true,
       "params": {
-        "in_kernel": ["linear", "rbf"],
+        "in_kernel": ["rbf", "rbf"],
         "out_kernel": "rbf",
         "gamma": 0.1,
         "nu": 0.03
       },
       "params_grid": {
-        "in_kernel": [["linear", "rbf"]],
+        "in_kernel": [["rbf", "rbf"]],
         "out_kernel": ["rbf"],
-        "gamma": [10, 1, 0.1, 0.01],
-        "nu": [1e6, 1e3, 1, 1e-3, 1e-6]
+        "gamma": [0.3, 0.1, 0.03, 0.01],
+        "nu": [1e-6, 1e-7, 1e-8, 1e-9, 1e-10]
       }
     },
     {
@@ -83,10 +83,10 @@
         "nu2": 1000
       },
       "params_grid": {
-        "rbf_gamma": [10, 1, 0.1, 0.01],
+        "rbf_gamma": [0.3, 0.1, 0.03, 0.01],
         "normalize_laplacian": [false],
-        "nu": [1e6, 1e3, 1, 1e-3, 1e-6],
-        "nu2": [1]
+        "nu": [1, 1e-1, 1e-2, 1e-3, 1e-4],
+        "nu2": [1, 1e-4, 1e-8]
       }
     }
   ]
