@@ -5,7 +5,7 @@
     "name": "20news_group",
     "type": "existing",
     "dataset": "all",
-    "path": "../data/20news_group/",
+    "path": "data/20news_group/",
     "num_training": 400,
     "num_unlabeled": 10000,
     "noise_scale": 0.0,
@@ -87,7 +87,7 @@
         "in_kernel": [["linear", "rbf"]],
         "out_kernel": ["rbf"],
         "gamma": [3, 1, 0.3, 0.1],
-        "nu": [1e-2, 1e-3, 1e-4, 1e-5, 1e-6]
+        "nu": [1e-4, 1e-5, 1e-6, 1e-7, 1e-8]
       }
     }
   ]

@@ -6,7 +6,7 @@ from sklearn.externals import six
 from sklearn.base import BaseEstimator, ClassifierMixin
 from abc import ABCMeta
 import util
-from scipy.sparse import issparse, vstack
+from scipy.sparse import issparse, vstack, spdiags
 
 
 class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
@@ -32,11 +32,7 @@ class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
 
   def predict(self, kernel_matrix):
     scores = self.decision_function(kernel_matrix)
-    if len(scores.shape) == 1:
-      indices = (scores > 0).astype(np.int)
-    else:
-      indices = scores.argmax(axis=1)
-    return self.classes_()[indices]
+    return self.predict_w_scores(scores)
 
   def decision_function(self, kernel_matrix):
     num_centers = kernel_matrix.shape[1]
@@ -49,6 +45,12 @@ class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
   def classes_(self):
     return self._label_binarizer.classes_
 
+  def predict_w_scores(self, scores):
+    if len(scores.shape) == 1:
+      indices = (scores > 0).astype(np.int)
+    else:
+      indices = scores.argmax(axis=1)
+    return self.classes_()[indices]
 
 class L2KernelClassifier(BaseL2KernelClassifier):
 
@@ -89,50 +91,83 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
       self.X_ = np.concatenate((util.cast_to_float32(X), util.cast_to_float32(unlabeled_data)))
     labeled = range(X.shape[0])
     self.labeled_ = labeled
-    kernel_matrix = self.fredholm_kernel(self.X_[labeled])
+    kernel_matrix = self.fredholm_kernel(self.X_[self.labeled_],
+                                         semi_data=self.X_,
+                                         in_kernel=self.in_kernel,
+                                         out_kernel=self.out_kernel,
+                                         gamma=self.gamma)
     super(L2FredholmClassifier, self).fit(kernel_matrix, y)
+    if self.out_kernel == "linear":
+      self.linear_coef = self.compute_linear_coef(self.coef_.T, X, semi_data=self.X_, in_kernel=self.in_kernel, gamma=self.gamma)
 
   def predict(self, X):
-    kernel_matrix = self.fredholm_kernel(X, Y=self.X_[self.labeled_])
-    return super(L2FredholmClassifier, self).predict(kernel_matrix)
+    if self.out_kernel == "linear":
+      if issparse(X):
+        scores = X*self.linear_coef.T
+      else:
+        scores = np.dot(X, self.linear_coef.T)
+      return super(L2FredholmClassifier, self).predict_w_scores(scores)
+    else:
+      kernel_matrix = self.fredholm_kernel(X, Y=self.X_[self.labeled_],
+                                           semi_data=self.X_,
+                                           in_kernel=self.in_kernel,
+                                           out_kernel=self.out_kernel,
+                                           gamma=self.gamma)
+      return super(L2FredholmClassifier, self).predict(kernel_matrix)
 
-  def fredholm_kernel(self, X, Y=None):
-    in_kernel_matrix_uu = self.compute_in_kernel()
+  def compute_linear_coef(cls, kernel_coef, X, semi_data=None, in_kernel=["rbf"], gamma=1.0):
+    if semi_data is None:
+      semi_data = X
+    in_kernel_matrix_uu = cls.compute_in_kernel(semi_data, in_kernel, gamma=gamma)
+    out_kernel_matrix_ux = pairwise_kernels(semi_data, X, metric="linear")
+    tmp_coef = np.dot(in_kernel_matrix_uu, np.dot(out_kernel_matrix_ux, kernel_coef))
+    if issparse(semi_data):
+      linear_coef = np.zeros(tmp_coef.shape[1], X.shape[1])
+      for i in range(tmp_coef.shape[1]):
+        linear_coef[i] = np.array((spdiags(tmp_coef[:, i], 0, X.shape[0], X.shape[0])*semi_data).sum(axis=0))[0]
+    else:
+      linear_coef = np.dot(tmp_coef.T, semi_data)
+    return linear_coef
+
+  def fredholm_kernel(cls, X, Y=None, semi_data=None, in_kernel=["rbf"], out_kernel="rbf", gamma=1.0):
+    if semi_data is None:
+      semi_data = X;
+    in_kernel_matrix_uu = cls.compute_in_kernel(semi_data, in_kernel, gamma=gamma)
     out_kernel_matrix_xu = pairwise_kernels(
-        X, self.X_, metric=self.out_kernel, filter_params=True,
-        gamma=self.gamma)
-    if self.out_kernel == "rbf":
+        X, semi_data, metric=out_kernel, filter_params=True,
+        gamma=gamma)
+    if out_kernel == "rbf":
       out_kernel_matrix_xu = out_kernel_matrix_xu/np.sum(out_kernel_matrix_xu, axis=1).reshape((X.shape[0],1))
     if Y is None:
       out_kernel_matrix_yu = out_kernel_matrix_xu
     else:
       out_kernel_matrix_yu = pairwise_kernels(
-          Y, self.X_, metric=self.out_kernel, filter_params=True,
-          gamma=self.gamma)
-      if self.out_kernel == "rbf":
+          Y, semi_data, metric=out_kernel, filter_params=True,
+          gamma=gamma)
+      if out_kernel == "rbf":
         out_kernel_matrix_yu = out_kernel_matrix_yu/np.sum(out_kernel_matrix_yu, axis=1).reshape((Y.shape[0],1))
     return np.dot(
         out_kernel_matrix_xu,
         np.dot(in_kernel_matrix_uu, out_kernel_matrix_yu.T))
 
-  def compute_in_kernel(self):
-    if len(self.in_kernel) == 1:
-      return pairwise_kernels(self.X_, metric=self.in_kernel[0],
-                              filter_params=True, gamma=self.gamma)
+  def compute_in_kernel(cls, semi_data, in_kernel, gamma=1.0):
+    if len(in_kernel) == 1:
+      return pairwise_kernels(semi_data, metric=in_kernel[0],
+                              filter_params=True, gamma=gamma)
 
-    for i, kernel in enumerate(self.in_kernel[:-1]):
+    for i, kernel in enumerate(in_kernel[:-1]):
       if i == 0:
         in_kernel_matrix = pairwise_kernels(
-            self.X_, metric=kernel, filter_params=True, gamma=self.gamma)
+            semi_data, metric=kernel, filter_params=True, gamma=gamma)
         if kernel == "rbf":
-          in_kernel_matrix = in_kernel_matrix/np.sum(in_kernel_matrix, axis=1).reshape((self.X_.shape[0],1))
+          in_kernel_matrix = in_kernel_matrix/np.sum(in_kernel_matrix, axis=1).reshape((semi_data.shape[0],1))
       else:
-        K = pairwise_kernels(self.X_, metric=kernel, filter_params=True,
-                             gamma=self.gamma)
+        K = pairwise_kernels(semi_data, metric=kernel, filter_params=True,
+                             gamma=gamma)
         if kernel == "rbf":
-          K = K / np.sum(K, axis=1).reshape((self.X_.shape[0],1))
+          K = K / np.sum(K, axis=1).reshape((semi_data.shape[0],1))
         in_kernel_matrix = np.dot(in_kernel_matrix, K)
-    inner_kernel_matrix = pairwise_kernels(self.X_, metric=self.in_kernel[-1],
-                                           filter_params=True, gamma=self.gamma)
+    inner_kernel_matrix = pairwise_kernels(semi_data, metric=in_kernel[-1],
+                                           filter_params=True, gamma=gamma)
     return np.dot(in_kernel_matrix,
                   np.dot(inner_kernel_matrix, in_kernel_matrix.T))
