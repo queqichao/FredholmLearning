@@ -12,12 +12,30 @@ from scipy.sparse import issparse, vstack, spdiags
 class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
                              ClassifierMixin):
 
-  def get_label_matrix(self, y):
-    return util.cast_to_float32(self._label_binarizer.fit_transform(y))
-
-  def fit(self, kernel_matrix, y):
+  def __init__(self, nu=1.0):
+    self.nu = nu
     self._label_binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
-    Y = self.get_label_matrix(y)
+
+  def get_label_matrix(self, y, class_for_unlabeled):
+    if class_for_unlabeled is None:
+      return util.cast_to_float32(self._label_binarizer.fit_transform(y))
+    else:
+      tmp_Y  = util.cast_to_float32(self._label_binarizer.fit_transform(y))
+      if class_for_unlabeled not in self._label_binarizer.classes_:
+        raise IndexError("The class for unlabeled is not in the input labels.")
+      unlabeled_idx = np.where(self._label_binarizer.classes_ == class_for_unlabeled)
+      idx = tmp_Y[:, unlabeled_idx] == 1
+      Y = np.zeros((tmp_Y.shape[0], tmp_Y.shape[1]-1), dtype=np.float32)
+      count = 0;
+      for i in range(Y.shape[1]):
+        if not i == unlabeled_idx:
+          Y[:,count] = tmp_Y[:, i]
+          Y[idx, count] = 0
+          count += 1
+      return Y
+
+  def fit(self, kernel_matrix, y, class_for_unlabeled=None):
+    Y = self.get_label_matrix(y, class_for_unlabeled)
     self.coef_ = np.empty(
         (Y.shape[1], kernel_matrix.shape[1]), dtype=np.float32)
     num_data = kernel_matrix.shape[0]
@@ -60,6 +78,7 @@ class L2KernelClassifier(BaseL2KernelClassifier):
     self.degree = degree
     self.gamma = gamma
     self.coef0 = coef0
+    super(L2KernelClassifier, self).__init__(nu=self.nu)
 
   def fit(self, X, y):
     self.X_ = util.cast_to_float32(X)
@@ -83,6 +102,7 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
     self.in_kernel = in_kernel
     self.out_kernel = out_kernel
     self.gamma = gamma
+    super(L2FredholmClassifier, self).__init__(nu=self.nu)
 
   def fit(self, X, y, unlabeled_data=None):
     if issparse(X):
@@ -115,6 +135,7 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
                                            gamma=self.gamma)
       return super(L2FredholmClassifier, self).predict(kernel_matrix)
 
+  @classmethod
   def compute_linear_coef(cls, kernel_coef, X, semi_data=None, in_kernel=["rbf"], gamma=1.0):
     if semi_data is None:
       semi_data = X
@@ -129,6 +150,7 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
       linear_coef = np.dot(tmp_coef.T, semi_data)
     return linear_coef
 
+  @classmethod
   def fredholm_kernel(cls, X, Y=None, semi_data=None, in_kernel=["rbf"], out_kernel="rbf", gamma=1.0):
     if semi_data is None:
       semi_data = X;
@@ -150,6 +172,7 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
         out_kernel_matrix_xu,
         np.dot(in_kernel_matrix_uu, out_kernel_matrix_yu.T))
 
+  @classmethod
   def compute_in_kernel(cls, semi_data, in_kernel, gamma=1.0):
     if len(in_kernel) == 1:
       return pairwise_kernels(semi_data, metric=in_kernel[0],

@@ -19,14 +19,14 @@ class LapRLSC(BaseL2KernelClassifier):
       self.nu2 = nu
     else:
       self.nu2 = nu2
-    self._label_binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
+    super(LapRLSC, self).__init__(nu=self.nu)
 
   def fit(self, X, y, unlabeled_data=None):
     num_data = X.shape[0] + unlabeled_data.shape[0]
     num_labeled = X.shape[0]
     num_unlabeled = unlabeled_data.shape[0]
     labeled = np.zeros((num_data,), dtype=np.float32)
-    labeled[0:num_labeled] = 1.0;
+    labeled[0:num_labeled] = 1.0
     if issparse(X):
       self.X_ = vstack((util.cast_to_float32(X),
                         util.cast_to_float32(unlabeled_data)), format='csr')
@@ -37,14 +37,14 @@ class LapRLSC(BaseL2KernelClassifier):
         self.rbf_gamma if self.rbf_gamma is not None else 1.0 / X.shape[1])
     kernel_matrix_ = rbf_kernel(self.X_, gamma=self.rbf_gamma_)
     I = np.identity(num_data, dtype=np.float32)
-    A = np.dot(np.diag(labeled), kernel_matrix_) + self.nu * I
+    A = np.dot(np.diag(labeled), kernel_matrix_)
     if self.nu2 != 0:
       laplacian_x_kernel = np.dot(graph_laplacian(
           kernel_matrix_, normed=self.normalize_laplacian), kernel_matrix_)
       A += self.nu2 * laplacian_x_kernel
     y = np.concatenate((y, -np.ones((num_unlabeled,), dtype=np.float32)),
                        axis=0)
-    super(LapRLSC, self).fit(A, y)
+    super(LapRLSC, self).fit(A, y, class_for_unlabeled=-1)
 
   def predict(self, X):
     kernel_matrix_ = rbf_kernel(

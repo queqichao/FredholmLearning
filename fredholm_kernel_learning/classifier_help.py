@@ -6,7 +6,7 @@ from fredholm_kernel_learning import L2KernelClassifier
 from fredholm_kernel_learning import L2FredholmClassifier
 from fredholm_kernel_learning import SVMLight
 from fredholm_kernel_learning import LapRLSC
-from rbf_kernel_approximation import RBFKernelApprClassifier
+from fredholm_kernel_learning import FredholmKernelApprClassifier
 import smtplib
 from email.mime.text import MIMEText
 
@@ -24,8 +24,8 @@ def get_classifier(classifier):
     c = SVMLight()
   elif classifier["name"] == "Lap-RLSC":
     c = LapRLSC()
-  elif classifier["name"] == "rbf_kernel_appr":
-    c = RBFKernelApprClassifier()
+  elif classifier["name"] == "fred_kernel_appr":
+    c = FredholmKernelApprClassifier()
   else:
     raise NameError('Not existing classifier: ' + classifier["name"] + '.')
   c.set_params(**classifier["params"])
@@ -45,8 +45,8 @@ def get_cv_classifier(classifier, cv):
     c = SVMLight()
   elif classifier["name"] == "Lap-RLSC":
     c = LapRLSC()
-  elif classifier["name"] == "rbf_kernel_appr":
-    c = RBFKernelApprClassifier()
+  elif classifier["name"] == "fred_kernel_appr":
+    c = FredholmKernelApprClassifier()
   else:
     raise NameError('Not existing classifier: ' + classifier["name"] + '.')
   return GridSearchCV(c, classifier["params_grid"], scoring=check_scoring(c),
@@ -66,6 +66,8 @@ def evaluation_classifier(dataset, classifier, cross_validation=False,
                           n_folds=None, fit_params={}):
   if classifier["semi-supervised"]:
     fit_params["unlabeled_data"] = dataset.unlabeled_data()
+  if classifier["name"] == "fred_kernel_appr":
+    fit_params["kernel_training_data"] = dataset.unlabeled_data()
   if cross_validation:
     if n_folds is None:
       raise NameError("n_folds should be specified if using cross validation")
