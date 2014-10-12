@@ -94,6 +94,12 @@ class L2KernelClassifier(BaseL2KernelClassifier):
         coef0=self.coef0)
     return super(L2KernelClassifier, self).predict(kernel_matrix)
 
+  def decision_function(self, X):
+    kernel_matrix = pairwise_kernels(
+        util.cast_to_float32(X), self.X_, metric=self.kernel,
+        filter_params=True, gamma=self.gamma, degree=self.degree,
+        coef0=self.coef0) 
+    return super(L2KernelClassifier, self).decision_function(kernel_matrix)
 
 class L2FredholmClassifier(BaseL2KernelClassifier):
 
