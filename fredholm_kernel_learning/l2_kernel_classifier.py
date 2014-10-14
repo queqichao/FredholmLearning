@@ -88,11 +88,8 @@ class L2KernelClassifier(BaseL2KernelClassifier):
     super(L2KernelClassifier, self).fit(kernel_matrix, y)
 
   def predict(self, X):
-    kernel_matrix = pairwise_kernels(
-        util.cast_to_float32(X), self.X_, metric=self.kernel,
-        filter_params=True, gamma=self.gamma, degree=self.degree,
-        coef0=self.coef0)
-    return super(L2KernelClassifier, self).predict(kernel_matrix)
+    scores = self.decision_function(X)
+    return self.predict_w_scores(scores)
 
   def decision_function(self, X):
     kernel_matrix = pairwise_kernels(
