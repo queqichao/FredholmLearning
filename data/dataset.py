@@ -7,7 +7,7 @@ from sklearn.feature_extraction.image import PatchExtractor
 import struct
 
 
-class SupervisedDataSet:
+class SupervisedDataSet(object):
 
   def __init__(self, data, labels, num_training):
     self._data = data
@@ -92,9 +92,9 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
 
   def __init__(self, dataset_config):
     self._name = dataset_config["name"]
-    num_training = dataset_config["num_training"]
-    num_testing = dataset_config["num_testing"]
-    num_unlabeled = dataset_config["num_unlabeled"]
+    self._num_training = dataset_config["num_training"]
+    self._num_testing = dataset_config["num_testing"]
+    self._num_unlabeled = dataset_config["num_unlabeled"]
     dim = dataset_config["dim"]
     self._noise_scale = dataset_config["noise_scale"]
     num_data = self._num_training + self._num_unlabeled + self._num_testing
@@ -102,7 +102,7 @@ class SynthesizedSemiSupervisedDataSet(SemiSupervisedDataSet):
                                          dim,
                                          self._noise_scale,
                                          self._name)
-    super().__init__(data, labels, num_training, num_unlabeled)
+    super(SynthesizedSemiSupervisedDataSet, self).__init__(data, labels, self._num_training, self._num_unlabeled)
 
   @classmethod
   def _generate_circle_data(cls, num_data, dim, noise_scale):
@@ -193,7 +193,7 @@ class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
       data, labels = mnist.read(dataset)
     elif dataset["name"] == '20news_group':
       data, labels = news_group.read(dataset)
-    super().__init__(data, labels, num_training, num_unlabeled)
+    super(ExistingSemiSupervisedDataSet, self).__init__(data, labels, num_training, num_unlabeled)
     if dataset["noise_scale"] > 0:
       self._add_noise(dataset["noise_scale"])
 

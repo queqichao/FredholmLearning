@@ -22,7 +22,7 @@
       "params_grid": {
         "C": [1e6, 1e3, 1, 1e-3, 1e-6],
         "kernel": ["rbf"],
-        "gamma": [10, 1, 0.1, 0.01]
+        "gamma": [1]
       }
     },
     {
@@ -35,7 +35,7 @@
       },
       "params_grid": {
         "kernel": ["rbf"],
-        "gamma": [10, 1, 0.1, 0.01],
+        "gamma": [1],
         "nu": [1e6, 1e3, 1, 1e-3, 1e-6]
       }
     },
@@ -51,7 +51,7 @@
       "params_grid": {
         "in_kernel": [["rbf"]],
         "out_kernel": ["rbf"],
-        "gamma": [10, 1, 0.1, 0.01],
+        "gamma": [1],
         "nu": [1e6, 1e3, 1, 1e-3, 1e-6]
       }
     },
@@ -67,7 +67,7 @@
       "params_grid": {
         "in_kernel": [["rbf", "rbf"]],
         "out_kernel": ["rbf"],
-        "gamma": [10, 1, 0.1, 0.01],
+        "gamma": [1],
         "nu": [1e6, 1e3, 1, 1e-3, 1e-6]
       }
     },
@@ -81,12 +81,11 @@
         "nu2": 1000
       },
       "params_grid": {
-        "rbf_gamma": [10, 1, 0.1, 0.01],
+        "rbf_gamma": [1],
         "normalize_laplacian": [false],
-        "nu": [1e6, 1e3, 1, 1e-3, 1e-6],
-        "nu2": [1]
+        "nu": [1e1, 1, 1e-1],
+        "nu2": [1, 1e-4, 1e-8]
       }
     }
-
   ]
 }

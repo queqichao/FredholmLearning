@@ -3,6 +3,7 @@ from data import SynthesizedSemiSupervisedDataSet
 from data import ExistingSemiSupervisedDataSet
 import argparse
 from fredholm_kernel_learning import classifier_help
+import util
 import json
 import getpass
 import socket
@@ -21,7 +22,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 config_file = args.config_file
-config = json.loads(open(config_file).read())
+config = util.convert(json.loads(open(config_file).read()))
 cv_config_file = args.cv_config_file
 plot_data = args.plot_data
 repeat = args.repeat
