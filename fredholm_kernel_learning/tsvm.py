@@ -49,8 +49,8 @@ class SVMLight(BaseEstimator, ClassifierMixin):
   def fit(self, X, y, unlabeled_data=None):
     num_data = X.shape[0]+unlabeled_data.shape[0]
     num_unlabeled = unlabeled_data.shape[0]
-    labeled = range(X.shape[0])
-    unlabeled = range(X.shape[0], num_data)
+    labeled = xrange(X.shape[0])
+    unlabeled = xrange(X.shape[0], num_data)
     if issparse(X):
       X = vstack((X, unlabeled_data), format='csr')
     else:
@@ -64,7 +64,7 @@ class SVMLight(BaseEstimator, ClassifierMixin):
     Y[labeled] = Y_labeled
     Y[unlabeled] = Y_unlabeled
     self.model_ = []
-    for i in range(self.num_classes_):
+    for i in xrange(self.num_classes_):
       y_column = Y[:, i]
       self.model_.append(
           svm.learn(self.__data2docs(X, y_column),
@@ -73,7 +73,7 @@ class SVMLight(BaseEstimator, ClassifierMixin):
   def predict(self, X):
     num_data = X.shape[0]
     scores = np.zeros((num_data, self.num_classes_,), dtype=np.float32)
-    for i in range(self.num_classes_):
+    for i in xrange(self.num_classes_):
       scores[:, i] = svm.classify(
           self.model_[i],
           self.__data2docs(X, np.zeros((num_data,), dtype=np.float32)))

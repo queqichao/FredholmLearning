@@ -80,6 +80,6 @@ def evaluation_classifier(dataset, classifier, cross_validation=False,
     c = get_classifier(classifier)
     c.fit(dataset.training_data(), dataset.training_labels(), **fit_params)
   testing_pred_labels = c.predict(dataset.testing_data())
-  return len([0 for i in range(dataset.num_testing())
+  return len([0 for i in xrange(dataset.num_testing())
               if dataset.testing_labels()[i] == testing_pred_labels[i]]
              ) * 1.0 / dataset.num_testing()

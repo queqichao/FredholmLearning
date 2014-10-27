@@ -1,7 +1,6 @@
 #include <Python.h>
 #include "svm_common.h"
 #include "svm_learn.h"
-#include <stdio.h>
 
 /* This function corresponds to parse_document() on line 763 of svm_common.c, but
  * it extracts data from a PyObject instead of a string. In Python, an individual
@@ -41,9 +40,9 @@ typedef struct {
 #define GET_MODEL(ptr) ((MODEL_AND_DOCS *)ptr)->model
 
 /* Destructor function for MODEL_AND_DOCS. */
-static void free_model_and_docs(PyObject *ptr);
+static void free_model_and_docs(void *ptr);
 
-static void free_just_model(PyObject *ptr);
+static void free_just_model(void *ptr);
 
 static PyObject *svm_learn(PyObject *self, PyObject *args, PyObject *kwds);
 static PyObject *py_write_model(PyObject *self, PyObject *args);
@@ -62,22 +61,13 @@ static PyMethodDef PySVMLightMethods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-static struct PyModuleDef svmlightmodule = {
-  PyModuleDef_HEAD_INIT,
-  "svmlight",
-  NULL,
-  -1,
-  PySVMLightMethods
-};
-
 PyMODINIT_FUNC
-PyInit_svmlight(void)
+initsvmlight(void)
 {
     PyObject *module;
-    module = PyModule_Create(&svmlightmodule);
+    module = Py_InitModule("svmlight", PySVMLightMethods);
     if (module == NULL)
-        return NULL;
-    return module;
+        return;
 }
 
 /* ========================================================================== */
@@ -229,12 +219,7 @@ static int read_learning_parameters(
     learn_parm->type = CLASSIFICATION;
 
     if(PyMapping_HasKeyString(kwds, "type")) {
-        PyObject *obj = PyMapping_GetItemString(kwds, "type");
-        char *type = PyBytes_AsString(obj);
-        if (PyUnicode_Check(obj)) {
-            obj = PyUnicode_AsUTF8String(obj);
-        }
-
+        char *type = PyString_AsString(PyMapping_GetItemString(kwds, "type"));
         if(!type) return 0;
         else if(!strcmp(type, "classification")) learn_parm->type = CLASSIFICATION;
         else if(!strcmp(type, "regression")) learn_parm->type = REGRESSION;
@@ -246,7 +231,7 @@ static int read_learning_parameters(
         }
     }
     if(PyMapping_HasKeyString(kwds, "kernel")) {
-        char *kernel = PyBytes_AsString(PyMapping_GetItemString(kwds, "kernel"));
+        char *kernel = PyString_AsString(PyMapping_GetItemString(kwds, "kernel"));
         if(!kernel) return 0;
         else if(!strcmp(kernel, "linear")) kernel_parm->kernel_type = LINEAR;
         else if(!strcmp(kernel, "polynomial")) kernel_parm->kernel_type = POLY;
@@ -296,8 +281,7 @@ static int read_learning_parameters(
     return 1;
 }
 
-void free_model_and_docs(PyObject *pyobj) {
-    MODEL_AND_DOCS *ptr = PyCapsule_GetPointer(pyobj, NULL);
+void free_model_and_docs(void *ptr) {
     int i;
     MODEL_AND_DOCS *obj = (MODEL_AND_DOCS *)ptr;
     free_model(obj->model, 0);
@@ -307,8 +291,7 @@ void free_model_and_docs(PyObject *pyobj) {
     free(ptr);
 }
 
-void free_just_model(PyObject *pyobj) {
-    MODEL_AND_DOCS *ptr = PyCapsule_GetPointer(pyobj, NULL);
+void free_just_model(void *ptr) {
     free_model(GET_MODEL(ptr), 1);
     free(ptr);
 }
@@ -364,7 +347,7 @@ static PyObject *svm_learn(PyObject *self, PyObject *args, PyObject *kwds)
     result->model = model;
     result->docs = docs;
     result->totdoc = totdoc;
-    return PyCapsule_New(result, NULL, free_model_and_docs);
+    return PyCObject_FromVoidPtr(result, free_model_and_docs);
 }
 
 static PyObject *py_write_model(PyObject *self, PyObject *args) {
@@ -374,7 +357,7 @@ static PyObject *py_write_model(PyObject *self, PyObject *args) {
 
     if(!PyArg_ParseTuple(args, "Os", &modelobj, &modelfile))
         return NULL;
-    model = GET_MODEL(PyCapsule_GetPointer(modelobj, NULL));
+    model = GET_MODEL(PyCObject_AsVoidPtr(modelobj));
     write_model(modelfile, model);
 
     Py_RETURN_NONE;
@@ -393,7 +376,7 @@ static PyObject *py_read_model(PyObject *self, PyObject *args) {
     result->model = model;
     result->docs = 0;
     result->totdoc = 0;
-    return PyCapsule_New(result, NULL, free_just_model);
+    return PyCObject_FromVoidPtr(result, free_just_model);
 }
 
 static PyObject *svm_classify(PyObject *self, PyObject *args) {
@@ -411,11 +394,11 @@ static PyObject *svm_classify(PyObject *self, PyObject *args) {
 
     if(!PyArg_ParseTuple(args, "OO", &modelobj, &doclist))
         return NULL;
-    if(!PyCapsule_CheckExact(modelobj) || !PySequence_Check(doclist)) {
+    if(!PyCObject_Check(modelobj) || !PySequence_Check(doclist)) {
         PyErr_SetString(PyExc_TypeError, "invalid positional argument(s)");
         return NULL;
     }
-    model = GET_MODEL(PyCapsule_GetPointer(modelobj, NULL));
+    model = GET_MODEL(PyCObject_AsVoidPtr(modelobj));
 
     if(model->kernel_parm.kernel_type == 0)
         add_weight_vector_to_linear_model(model);

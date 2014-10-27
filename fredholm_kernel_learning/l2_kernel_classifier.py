@@ -27,7 +27,7 @@ class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
       idx = (tmp_Y[:, unlabeled_idx] == 1).ravel()
       Y = np.zeros((tmp_Y.shape[0], tmp_Y.shape[1]-1), dtype=np.float32)
       count = 0;
-      for i in range(Y.shape[1]):
+      for i in xrange(Y.shape[1]):
         if not i == unlabeled_idx:
           Y[:,count] = tmp_Y[:, i]
           print(Y.shape)
@@ -43,7 +43,7 @@ class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
     num_data = kernel_matrix.shape[0]
     kernel_matrix[np.diag_indices(num_data)] += self.nu
     cond_num = np.linalg.cond(kernel_matrix)
-    for i in range(Y.shape[1]):
+    for i in xrange(Y.shape[1]):
       y_column = Y[:, i]
       if np.isinf(cond_num):
         self.coef_[i] = np.linalg.lstsq(kernel_matrix, y_column)[0]
@@ -115,7 +115,7 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
       self.X_ = vstack((util.cast_to_float32(X), util.cast_to_float32(unlabeled_data)), format='csr')
     else:
       self.X_ = np.concatenate((util.cast_to_float32(X), util.cast_to_float32(unlabeled_data)))
-    labeled = range(X.shape[0])
+    labeled = xrange(X.shape[0])
     self.labeled_ = labeled
     kernel_matrix = self.fredholm_kernel(self.X_[self.labeled_],
                                          semi_data=self.X_,
@@ -152,7 +152,7 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
     tmp_coef = np.dot(in_kernel_matrix_uu, np.dot(out_kernel_matrix_ux, kernel_coef))
     if issparse(semi_data):
       linear_coef = np.zeros(tmp_coef.shape[1], X.shape[1])
-      for i in range(tmp_coef.shape[1]):
+      for i in xrange(tmp_coef.shape[1]):
         linear_coef[i] = np.array((spdiags(tmp_coef[:, i], 0, X.shape[0], X.shape[0])*semi_data).sum(axis=0))[0]
     else:
       linear_coef = np.dot(tmp_coef.T, semi_data)

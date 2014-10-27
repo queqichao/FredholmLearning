@@ -32,9 +32,9 @@ classifiers = config["classifiers"]
 cross_validation = config["cross_validation"]
 n_folds = config["n_folds"]
 
-results = [[] for x in range(len(classifiers))]
+results = [[] for x in xrange(len(classifiers))]
 
-for i in range(repeat):
+for i in xrange(repeat):
   if dataset_config["type"] == 'synthesized':
     dataset = SynthesizedSemiSupervisedDataSet(dataset_config)
   elif dataset_config["type"] == 'existing':

@@ -5,8 +5,6 @@ A Python binding to the [SVM-Light](http://svmlight.joachims.org/) support vecto
 
 Written by Bill Cauchois (<wcauchois@gmail.com>), with thanks to Lucas Beyer and n0mad for their contributions.
 
-Branched by Qichao Que (<colin.que@gmail.com>), to adapt the code to python 3 (TODO: Fix the build break for python2).
-
 Installation
 ------------
 PySVMLight uses distutils for setup. Installation is as simple as
