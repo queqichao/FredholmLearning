@@ -23,13 +23,15 @@ class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
       tmp_Y  = util.cast_to_float32(self._label_binarizer.fit_transform(y))
       if class_for_unlabeled not in self._label_binarizer.classes_:
         raise IndexError("The class for unlabeled is not in the input labels.")
-      unlabeled_idx = np.where(self._label_binarizer.classes_ == class_for_unlabeled)
-      idx = tmp_Y[:, unlabeled_idx] == 1
+      unlabeled_idx, = np.where(self._label_binarizer.classes_ == class_for_unlabeled)
+      idx = (tmp_Y[:, unlabeled_idx] == 1).ravel()
       Y = np.zeros((tmp_Y.shape[0], tmp_Y.shape[1]-1), dtype=np.float32)
       count = 0;
       for i in range(Y.shape[1]):
         if not i == unlabeled_idx:
           Y[:,count] = tmp_Y[:, i]
+          print(Y.shape)
+          print(idx.shape)
           Y[idx, count] = 0
           count += 1
       return Y
@@ -49,10 +51,10 @@ class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
         self.coef_[i] = np.linalg.solve(kernel_matrix, y_column)
 
   def predict(self, kernel_matrix):
-    scores = self.decision_function(kernel_matrix)
+    scores = self.decision_function_w_kernel(kernel_matrix)
     return self.predict_w_scores(scores)
 
-  def decision_function(self, kernel_matrix):
+  def decision_function_w_kernel(self, kernel_matrix):
     num_centers = kernel_matrix.shape[1]
     if self.coef_.shape[1] != num_centers:
       raise ValueError("Kernel matrix has %d centers per sample; expecting %d"
@@ -96,15 +98,16 @@ class L2KernelClassifier(BaseL2KernelClassifier):
         util.cast_to_float32(X), self.X_, metric=self.kernel,
         filter_params=True, gamma=self.gamma, degree=self.degree,
         coef0=self.coef0) 
-    return super(L2KernelClassifier, self).decision_function(kernel_matrix)
+    return super(L2KernelClassifier, self).decision_function_w_kernel(kernel_matrix)
 
 class L2FredholmClassifier(BaseL2KernelClassifier):
 
-  def __init__(self, nu=1.0, in_kernel=['rbf'], out_kernel='rbf', gamma=0.0):
+  def __init__(self, nu=1.0, in_kernel=['rbf'], out_kernel='rbf', gamma=0.0, normalized=True):
     self.nu = nu
     self.in_kernel = in_kernel
     self.out_kernel = out_kernel
     self.gamma = gamma
+    self.normalized = normalized
     super(L2FredholmClassifier, self).__init__(nu=self.nu)
 
   def fit(self, X, y, unlabeled_data=None):
@@ -118,7 +121,8 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
                                          semi_data=self.X_,
                                          in_kernel=self.in_kernel,
                                          out_kernel=self.out_kernel,
-                                         gamma=self.gamma)
+                                         gamma=self.gamma,
+                                         normalized=self.normalized)
     super(L2FredholmClassifier, self).fit(kernel_matrix, y)
     if self.out_kernel == "linear":
       self.linear_coef = self.compute_linear_coef(self.coef_.T, X, semi_data=self.X_, in_kernel=self.in_kernel, gamma=self.gamma)
@@ -135,7 +139,8 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
                                            semi_data=self.X_,
                                            in_kernel=self.in_kernel,
                                            out_kernel=self.out_kernel,
-                                           gamma=self.gamma)
+                                           gamma=self.gamma,
+                                           normalized=self.normalized)
       return super(L2FredholmClassifier, self).predict(kernel_matrix)
 
   @classmethod
@@ -154,7 +159,7 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
     return linear_coef
 
   @classmethod
-  def fredholm_kernel(cls, X, Y=None, semi_data=None, in_kernel=["rbf"], out_kernel="rbf", gamma=1.0):
+  def fredholm_kernel(cls, X, Y=None, semi_data=None, in_kernel=["rbf"], out_kernel="rbf", gamma=1.0, normalized=True):
     if semi_data is None:
       semi_data = X;
     in_kernel_matrix_uu = cls.compute_in_kernel(semi_data, in_kernel, gamma=gamma)
@@ -162,7 +167,10 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
         X, semi_data, metric=out_kernel, filter_params=True,
         gamma=gamma)
     if out_kernel == "rbf":
-      out_kernel_matrix_xu = out_kernel_matrix_xu/np.sum(out_kernel_matrix_xu, axis=1).reshape((X.shape[0],1))
+      if normalized:
+        out_kernel_matrix_xu = out_kernel_matrix_xu/np.sum(out_kernel_matrix_xu, axis=1).reshape((X.shape[0],1))
+      else:
+        out_kernel_matrix_xu = out_kernel_matrix_xu/semi_data.shape[0]
     if Y is None:
       out_kernel_matrix_yu = out_kernel_matrix_xu
     else:
@@ -170,7 +178,10 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
           Y, semi_data, metric=out_kernel, filter_params=True,
           gamma=gamma)
       if out_kernel == "rbf":
-        out_kernel_matrix_yu = out_kernel_matrix_yu/np.sum(out_kernel_matrix_yu, axis=1).reshape((Y.shape[0],1))
+        if normalized:
+          out_kernel_matrix_yu = out_kernel_matrix_yu/np.sum(out_kernel_matrix_yu, axis=1).reshape((Y.shape[0],1))
+        else:
+          out_kernel_matrix_yu = out_kernel_matrix_yu/semi_data.shape[0]
     return np.dot(
         out_kernel_matrix_xu,
         np.dot(in_kernel_matrix_uu, out_kernel_matrix_yu.T))

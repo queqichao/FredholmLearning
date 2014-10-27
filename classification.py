@@ -50,7 +50,7 @@ for i in range(repeat):
     classifier["n_jobs"] = n_jobs
     if cross_validation:
       results[j].append(classifier_help.evaluation_classifier(
-          dataset, classifier, cross_validation, n_folds))
+          dataset, classifier, cross_validation=cross_validation, n_folds=n_folds, fit_params = {}))
     else:
       results[j].append(
           classifier_help.evaluation_classifier(dataset, classifier))
