@@ -36,7 +36,6 @@ class LapRLSC(BaseL2KernelClassifier):
     self.rbf_gamma_ = (
         self.rbf_gamma if self.rbf_gamma is not None else 1.0 / X.shape[1])
     kernel_matrix_ = rbf_kernel(self.X_, gamma=self.rbf_gamma_)
-    I = np.identity(num_data, dtype=np.float32)
     A = np.dot(np.diag(labeled), kernel_matrix_)
     if self.nu2 != 0:
       laplacian_x_kernel = np.dot(graph_laplacian(

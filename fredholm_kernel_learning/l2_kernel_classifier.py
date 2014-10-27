@@ -17,21 +17,23 @@ class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
     self._label_binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
 
   def get_label_matrix(self, y, class_for_unlabeled):
+    self._label_binarizer.fit(y)
     if class_for_unlabeled is None:
-      return util.cast_to_float32(self._label_binarizer.fit_transform(y))
+      self.classes = self._label_binarizer.classes_
+      return util.cast_to_float32(self._label_binarizer.transform(y))
     else:
-      tmp_Y  = util.cast_to_float32(self._label_binarizer.fit_transform(y))
+      tmp_Y  = util.cast_to_float32(self._label_binarizer.transform(y))
       if class_for_unlabeled not in self._label_binarizer.classes_:
         raise IndexError("The class for unlabeled is not in the input labels.")
       unlabeled_idx, = np.where(self._label_binarizer.classes_ == class_for_unlabeled)
+      self.classes = np.array([c for c in self._label_binarizer.classes_ if c != class_for_unlabeled])
       idx = (tmp_Y[:, unlabeled_idx] == 1).ravel()
+      
       Y = np.zeros((tmp_Y.shape[0], tmp_Y.shape[1]-1), dtype=np.float32)
       count = 0;
-      for i in xrange(Y.shape[1]):
+      for i in xrange(tmp_Y.shape[1]):
         if not i == unlabeled_idx:
           Y[:,count] = tmp_Y[:, i]
-          print(Y.shape)
-          print(idx.shape)
           Y[idx, count] = 0
           count += 1
       return Y
@@ -63,7 +65,7 @@ class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
     return scores.ravel() if scores.shape[1] == 1 else scores
 
   def classes_(self):
-    return self._label_binarizer.classes_
+    return self.classes
 
   def predict_w_scores(self, scores):
     if len(scores.shape) == 1:

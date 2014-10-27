@@ -55,6 +55,8 @@ for i in xrange(repeat):
     else:
       results[j].append(
           classifier_help.evaluation_classifier(dataset, classifier))
+  print('result at '+str(i)+'-th repetition:')
+  print([r[-1] for r in results])
 
 if cv_config_file != "":
   open(cv_config_file, 'w').write(json.dumps(config))
