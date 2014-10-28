@@ -1,6 +1,7 @@
 import numpy as np
 from data import mnist
 from data import news_group
+from data import mnist_back_rand
 from scipy.sparse import issparse
 import util
 from sklearn.feature_extraction.image import PatchExtractor
@@ -193,6 +194,8 @@ class ExistingSemiSupervisedDataSet(SemiSupervisedDataSet):
       data, labels = mnist.read(dataset)
     elif dataset["name"] == '20news_group':
       data, labels = news_group.read(dataset)
+    elif dataset["name"] == 'mnist_back_rand':
+      data, labels = mnist_back_rand.read(dataset)
     super(ExistingSemiSupervisedDataSet, self).__init__(data, labels, num_training, num_unlabeled)
     if dataset["noise_scale"] > 0:
       self._add_noise(dataset["noise_scale"])
