@@ -3,6 +3,7 @@ from data import SynthesizedSemiSupervisedDataSet
 from data import ExistingSemiSupervisedDataSet
 import argparse
 from fredholm_kernel_learning import classifier_help
+from sklearn.cross_validation import ShuffleSplit
 import util
 import json
 import getpass
@@ -31,7 +32,13 @@ n_jobs = args.n_jobs
 dataset_config = config["dataset"]
 classifiers = config["classifiers"]
 cross_validation = config["cross_validation"]
-n_folds = config["n_folds"]
+use_kfold = True
+if "n_folds" in config:
+  n_folds = config["n_folds"]
+if "test_size" in config:
+  use_kfold = False
+  test_size = config["test_size"]
+  cv_n_iter = config["cv_n_iter"]
 
 results = [[] for x in xrange(len(classifiers))]
 
@@ -44,6 +51,11 @@ for i in xrange(repeat):
     raise NameError(
         "Data set type: " + dataset_config["type"] + " does not exist.")
 
+  if use_kfold:
+    cv = n_folds
+  else:
+    cv = ShuffleSplit(dataset.num_training(), cv_n_iter, test_size)
+
   if plot_data:
     dataset.visualize([0, 1])
 
@@ -51,7 +63,7 @@ for i in xrange(repeat):
     classifier["n_jobs"] = n_jobs
     if cross_validation:
       results[j].append(classifier_help.evaluation_classifier(
-          dataset, classifier, cross_validation=cross_validation, n_folds=n_folds, fit_params = {}))
+          dataset, classifier, cross_validation=cross_validation, cv=cv, fit_params = {}))
     else:
       results[j].append(
           classifier_help.evaluation_classifier(dataset, classifier))
