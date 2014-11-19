@@ -63,15 +63,15 @@ def send_results(msg_string, from_addr, to_addr):
 
 
 def evaluation_classifier(dataset, classifier, cross_validation=False,
-                          n_folds=None, fit_params={}):
+                          cv=None, fit_params={}):
   if classifier["semi-supervised"]:
     fit_params["unlabeled_data"] = dataset.unlabeled_data()
   if classifier["name"] == "fred_kernel_appr":
     fit_params["kernel_training_data"] = dataset.unlabeled_data()
   if cross_validation:
-    if n_folds is None:
-      raise NameError("n_folds should be specified if using cross validation")
-    c = get_cv_classifier(classifier, n_folds)
+    if cv is None:
+      raise NameError("cv should be specified if using cross validation")
+    c = get_cv_classifier(classifier, cv)
     c.fit_params = fit_params
     c.fit(dataset.training_data(), dataset.training_labels())
     print(classifier["name"] + ": " + str(c.best_params_))
