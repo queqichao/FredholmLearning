@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 def load_mnist_back_rand(path):
@@ -15,9 +16,9 @@ def read(dataset):
     raise NameError("dataset need to specified.")
 
   if dataset["dataset"] == "training":
-    fname = os.path.join(dataset["path"], 'mnist_background_train.amat')
+    fname = os.path.join(dataset["path"], 'mnist_background_random_train.amat')
   elif dataset["dataset"] == "testing":
-    fname = os.path.join(dataset["path"], 'mnist_background_test.amat')
+    fname = os.path.join(dataset["path"], 'mnist_background_random_test.amat')
   else:
     raise ValueError("dataset must be 'testing' or 'training'")
 

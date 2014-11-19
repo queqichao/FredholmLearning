@@ -44,13 +44,12 @@ class BaseL2KernelClassifier(six.with_metaclass(ABCMeta, BaseEstimator),
         (Y.shape[1], kernel_matrix.shape[1]), dtype=np.float32)
     num_data = kernel_matrix.shape[0]
     kernel_matrix[np.diag_indices(num_data)] += self.nu
-    cond_num = np.linalg.cond(kernel_matrix)
     for i in xrange(Y.shape[1]):
       y_column = Y[:, i]
-      if np.isinf(cond_num):
-        self.coef_[i] = np.linalg.lstsq(kernel_matrix, y_column)[0]
-      else:
+      try:
         self.coef_[i] = np.linalg.solve(kernel_matrix, y_column)
+      except LinAlgError:
+        print("Error occurs when solve the equation.")
 
   def predict(self, kernel_matrix):
     scores = self.decision_function_w_kernel(kernel_matrix)
@@ -134,7 +133,7 @@ class L2FredholmClassifier(BaseL2KernelClassifier):
       if issparse(X):
         scores = X*self.linear_coef.T
       else:
-        scores = np.dot(X, self.linear_coef.T)
+        scores = np.dot(X, self.linear_coef.T).ravel()
       return super(L2FredholmClassifier, self).predict_w_scores(scores)
     else:
       kernel_matrix = self.fredholm_kernel(X, Y=self.X_[self.labeled_],
